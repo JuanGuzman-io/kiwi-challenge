@@ -1,42 +1,277 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 64px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.rewards-home {
+  width: min(327px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  color: var(--ink);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.rewards-header h1 {
+  margin-top: 54px;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: 0;
+  color: var(--ink-strong);
+}
+
+.balance-summary-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  gap: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+}
+
+.balance-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.balance-label {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  opacity: 0.6;
+  color: var(--ink);
+}
+
+.balance-amount {
+  margin: 0;
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.withdraw-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 64px;
+  height: 20px;
+  border: none;
+  border-radius: 999px;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  margin-top: 2px;
+}
+
+.withdraw-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 58, 115, 0.24);
+}
+
+.withdraw-button:disabled {
+  cursor: not-allowed;
+  background: #c9d3e6;
+  color: #f7f9fc;
+  box-shadow: none;
+  transform: none;
+}
+
+.withdraw-arrow {
+  font-size: 12px;
+  line-height: 1;
+  gap: 2px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transaction-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transaction-group-header {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  gap: 16px;
+  color: var(--ink-muted);
+}
+
+.transaction-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transaction-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.transaction-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.transaction-icon .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.transaction-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.transaction-type {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.transaction-description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.transaction-date {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.transaction-amount {
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 72px;
+  text-align: right;
+}
+
+.amount {
+  margin: 0;
+}
+
+.amount--incoming {
+  color: #16a34a;
+}
+
+.amount--outgoing {
+  color: var(--ink-strong);
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--surface-border);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.error-message,
+.empty-message {
+  margin: 0 0 12px;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.error-retry-button {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #eef2f7, #f7f9fc, #eef2f7);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.loading-state.balance .skeleton-title {
+  width: 120px;
+  height: 12px;
+  margin-bottom: 10px;
+}
+
+.loading-state.balance .skeleton-amount {
+  width: 140px;
+  height: 28px;
+  margin-bottom: 12px;
+}
+
+.loading-state.balance .skeleton-button {
+  width: 88px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.loading-state.transactions .skeleton-transaction {
+  display: grid;
+  grid-template-columns: 40px 1fr 72px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.loading-state.transactions .skeleton-text {
+  height: 14px;
+  width: 70%;
+}
+
+.loading-state.transactions .skeleton-amount {
+  height: 16px;
+  width: 72px;
+  justify-self: end;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
   }
-  to {
-    transform: rotate(360deg);
+  100% {
+    background-position: 100% 50%;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@media (min-width: 768px) {
+  #root {
+    padding-top: 64px;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }

@@ -6,7 +6,7 @@
  */
 
 import type { Transaction, TransactionGroup } from '../types/rewards.types';
-import { getMonthName, formatMonthHeader } from './formatMonthHeader';
+import { getMonthName } from './formatMonthHeader';
 
 /**
  * Groups transactions by month (newest first) with memoization

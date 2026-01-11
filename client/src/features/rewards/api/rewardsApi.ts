@@ -6,6 +6,7 @@
 import type { RewardsSummary } from "../types/rewards.types";
 import type { PaginatedTransactions } from "../types/api.types";
 import { APIError, TimeoutError } from "../types/api.types";
+import { logAPIFailure } from "../utils/logger";
 
 // API base URL from environment variables
 const API_BASE_URL = "http://localhost:3000";
@@ -42,11 +43,19 @@ async function fetchWithTimeout(
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw new APIError(
+      const apiError = new APIError(
         response.status,
         body,
         `API request failed with status ${response.status}`
       );
+
+      // T126: Log API failure
+      logAPIFailure(url, apiError, {
+        status: response.status,
+        method: options.method || 'GET',
+      });
+
+      throw apiError;
     }
 
     return response;
@@ -55,7 +64,21 @@ async function fetchWithTimeout(
 
     // Convert AbortError to TimeoutError
     if (error instanceof Error && error.name === "AbortError") {
-      throw new TimeoutError("Request exceeded 5 seconds");
+      const timeoutError = new TimeoutError("Request exceeded 5 seconds");
+
+      // T126: Log timeout error
+      logAPIFailure(url, timeoutError, {
+        method: options.method || 'GET',
+      });
+
+      throw timeoutError;
+    }
+
+    // T126: Log unexpected errors
+    if (error instanceof Error) {
+      logAPIFailure(url, error, {
+        method: options.method || 'GET',
+      });
     }
 
     throw error;

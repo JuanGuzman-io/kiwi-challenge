@@ -39,13 +39,18 @@ export interface PaginatedTransactions {
  * Extends Error with HTTP status code and response body
  */
 export class APIError extends Error {
+  statusCode: number;
+  body: unknown;
+
   constructor(
-    public statusCode: number,
-    public body: any,
+    statusCode: number,
+    body: unknown,
     message: string = 'API request failed'
   ) {
     super(message);
     this.name = 'APIError';
+    this.statusCode = statusCode;
+    this.body = body;
   }
 }
 

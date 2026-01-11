@@ -1,7 +1,8 @@
 /**
- * Hook for fetching rewards transactions (initial load only, no pagination yet)
+ * Hook for fetching rewards transactions with pagination support
  * Per FR-023: Fetch paginated transaction history from GET /rewards/transactions
- * Pagination will be added in Phase 5 (US3)
+ * Per FR-024: Use cursor-based pagination for transaction history
+ * Per FR-017: Append new transactions without resetting existing items
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,13 +15,14 @@ interface UseRewardsTransactionsReturn {
   error: Error | null;
   hasMore: boolean;
   nextCursor: string | null;
+  loadingMore: boolean;
+  loadMore: () => void;
   refetch: () => void;
 }
 
 /**
- * Fetches and manages transaction history state (initial load only)
- * Pagination functionality will be added in Phase 5 (User Story 3)
- * @returns Transaction data, loading state, error state, pagination info, and refetch
+ * Fetches and manages transaction history state with pagination
+ * @returns Transaction data, loading states, pagination info, loadMore, and refetch
  */
 export function useRewardsTransactions(): UseRewardsTransactionsReturn {
   const [data, setData] = useState<Transaction[]>([]);
@@ -28,13 +30,14 @@ export function useRewardsTransactions(): UseRewardsTransactionsReturn {
   const [error, setError] = useState<Error | null>(null);
   const [hasMore, setHasMore] = useState<boolean>(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
+  // Initial fetch
   const fetch = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Initial load - no cursor (first page only for now)
       const result = await getTransactions(null, 20);
       setData(result.transactions);
       setHasMore(result.hasMore);
@@ -49,13 +52,37 @@ export function useRewardsTransactions(): UseRewardsTransactionsReturn {
     }
   }, []);
 
+  // Load more (pagination)
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+
+    setLoadingMore(true);
+    setError(null);
+
+    try {
+      const result = await getTransactions(nextCursor, 20);
+
+      // Append new transactions to existing ones
+      setData((prevData) => [...prevData, ...result.transactions]);
+      setHasMore(result.hasMore);
+      setNextCursor(result.nextCursor);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextCursor, loadingMore]);
+
   // Initial fetch on mount
   useEffect(() => {
     fetch();
   }, [fetch]);
 
-  // Manual refetch function
+  // Manual refetch function (resets to first page)
   const refetch = useCallback(() => {
+    setData([]);
+    setNextCursor(null);
+    setHasMore(false);
     fetch();
   }, [fetch]);
 
@@ -65,6 +92,8 @@ export function useRewardsTransactions(): UseRewardsTransactionsReturn {
     error,
     hasMore,
     nextCursor,
+    loadingMore,
+    loadMore,
     refetch,
   };
 }

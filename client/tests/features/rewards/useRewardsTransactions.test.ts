@@ -134,4 +134,104 @@ describe('useRewardsTransactions', () => {
     expect(result.current.error).not.toBeNull();
     expect(result.current.error?.name).toBe('TimeoutError');
   }, 10000);
+
+  // T082: loadMore appends transactions without resetting existing list
+  it('should append transactions when loading more without resetting list', async () => {
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const initialCount = result.current.data.length;
+    expect(initialCount).toBe(3); // First page has 3 transactions
+    expect(result.current.hasMore).toBe(true);
+    expect(result.current.nextCursor).toBe('cursor_page2');
+
+    // Load more
+    result.current.loadMore();
+
+    // Should start loading more
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(true);
+    });
+
+    // Wait for second page to load
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(false);
+    });
+
+    // Transactions should be appended (not replaced)
+    expect(result.current.data.length).toBeGreaterThan(initialCount);
+    expect(result.current.hasMore).toBe(false); // No more pages
+    expect(result.current.nextCursor).toBeNull();
+  });
+
+  // T083: hasMore flag correctly indicates more pages exist
+  it('should correctly set hasMore flag based on pagination state', async () => {
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    // Initial load - hasMore should be true
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.hasMore).toBe(true);
+
+    // Load more
+    result.current.loadMore();
+
+    // After loading last page - hasMore should be false
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(false);
+    });
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  // T084: loadingMore state true during pagination request
+  it('should set loadingMore to true during pagination request', async () => {
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Initially not loading more
+    expect(result.current.loadingMore).toBe(false);
+
+    // Trigger loadMore
+    result.current.loadMore();
+
+    // Should be loading more
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(true);
+    });
+
+    // Should complete loading more
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(false);
+    });
+  });
+
+  // T085: nextCursor passed correctly to getTransactions API
+  it('should pass nextCursor correctly to API when loading more', async () => {
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const firstCursor = result.current.nextCursor;
+    expect(firstCursor).toBe('cursor_page2');
+
+    // Load more should use the cursor
+    result.current.loadMore();
+
+    await waitFor(() => {
+      expect(result.current.loadingMore).toBe(false);
+    });
+
+    // After loading second page, cursor should be null (last page)
+    expect(result.current.nextCursor).toBeNull();
+  });
 });

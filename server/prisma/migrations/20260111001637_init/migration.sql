@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "TransactionType" AS ENUM ('CASHBACK', 'REFERRAL_BONUS', 'WITHDRAWAL', 'INCOME');
+CREATE TYPE "TransactionType" AS ENUM ('CASHBACK', 'REFERRAL_BONUS', 'WITHDRAWAL', 'INCOME', 'ATH');
 
 -- CreateEnum
 CREATE TYPE "WithdrawalStatus" AS ENUM ('COMPLETED');

@@ -196,27 +196,27 @@ This is a web frontend project with paths relative to `client/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T082 [P] [US3] Add test case: loadMore appends transactions without resetting existing list in client/tests/features/rewards/useRewardsTransactions.test.ts
-- [ ] T083 [P] [US3] Add test case: hasMore flag correctly indicates more pages exist in client/tests/features/rewards/useRewardsTransactions.test.ts
-- [ ] T084 [P] [US3] Add test case: loadingMore state true during pagination request in client/tests/features/rewards/useRewardsTransactions.test.ts
-- [ ] T085 [P] [US3] Add test case: nextCursor passed correctly to getTransactions API in client/tests/features/rewards/useRewardsTransactions.test.ts
-- [ ] T086 [P] [US3] Add test case: "Load more" button hidden when hasMore=false in client/tests/features/rewards/TransactionList.test.tsx
+- [X] T082 [P] [US3] Add test case: loadMore appends transactions without resetting existing list in client/tests/features/rewards/useRewardsTransactions.test.ts
+- [X] T083 [P] [US3] Add test case: hasMore flag correctly indicates more pages exist in client/tests/features/rewards/useRewardsTransactions.test.ts
+- [X] T084 [P] [US3] Add test case: loadingMore state true during pagination request in client/tests/features/rewards/useRewardsTransactions.test.ts
+- [X] T085 [P] [US3] Add test case: nextCursor passed correctly to getTransactions API in client/tests/features/rewards/useRewardsTransactions.test.ts
+- [X] T086 [P] [US3] Add test case: "Load more" button hidden when hasMore=false in client/tests/features/rewards/TransactionList.test.tsx
 
 ### Implementation for User Story 3
 
-- [ ] T087 [US3] Extend useRewardsTransactions hook with pagination state (allTransactions, nextCursor, hasMore, loadingMore) in client/src/features/rewards/hooks/useRewardsTransactions.ts
-- [ ] T088 [US3] Implement loadMore function in useRewardsTransactions that appends to allTransactions in client/src/features/rewards/hooks/useRewardsTransactions.ts
-- [ ] T089 [US3] Create LoadMoreButton component with loading indicator and disabled state in client/src/features/rewards/components/LoadMoreButton.tsx
-- [ ] T090 [US3] Add LoadMoreButton to TransactionList component with hasMore visibility logic in client/src/features/rewards/components/TransactionList.tsx
-- [ ] T091 [US3] Update TransactionList to use allTransactions from useRewardsTransactions in client/src/features/rewards/components/TransactionList.tsx
-- [ ] T092 [US3] Add loadingMore inline indicator to TransactionList in client/src/features/rewards/components/TransactionList.tsx
+- [X] T087 [US3] Extend useRewardsTransactions hook with pagination state (allTransactions, nextCursor, hasMore, loadingMore) in client/src/features/rewards/hooks/useRewardsTransactions.ts
+- [X] T088 [US3] Implement loadMore function in useRewardsTransactions that appends to allTransactions in client/src/features/rewards/hooks/useRewardsTransactions.ts
+- [X] T089 [US3] Create LoadMoreButton component with loading indicator and disabled state in client/src/features/rewards/components/LoadMoreButton.tsx
+- [X] T090 [US3] Add LoadMoreButton to TransactionList component with hasMore visibility logic in client/src/features/rewards/components/TransactionList.tsx
+- [X] T091 [US3] Update TransactionList to use allTransactions from useRewardsTransactions in client/src/features/rewards/components/TransactionList.tsx
+- [X] T092 [US3] Add loadingMore inline indicator to TransactionList in client/src/features/rewards/components/TransactionList.tsx
 
 ### Integration Tests for User Story 3
 
-- [ ] T093 [US3] Add test: "Load more" button appends transactions without layout jump in client/tests/features/rewards/TransactionList.test.tsx
-- [ ] T094 [US3] Add test: "Load more" button disabled while loadingMore=true in client/tests/features/rewards/TransactionList.test.tsx
-- [ ] T095 [US3] Add test: "Load more" button hidden when hasMore=false in client/tests/features/rewards/TransactionList.test.tsx
-- [ ] T096 [US3] Add test: pagination maintains month grouping across pages in client/tests/features/rewards/TransactionList.test.tsx
+- [X] T093 [US3] Add test: "Load more" button appends transactions without layout jump in client/tests/features/rewards/TransactionList.test.tsx
+- [X] T094 [US3] Add test: "Load more" button disabled while loadingMore=true in client/tests/features/rewards/TransactionList.test.tsx
+- [X] T095 [US3] Add test: "Load more" button hidden when hasMore=false in client/tests/features/rewards/TransactionList.test.tsx
+- [X] T096 [US3] Add test: pagination maintains month grouping across pages in client/tests/features/rewards/TransactionList.test.tsx
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work independently. Users can paginate through long transaction histories.
 
@@ -232,19 +232,19 @@ This is a web frontend project with paths relative to `client/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T097 [P] [US4] Add test case: "Retirar" button navigates to /withdraw when clicked in client/tests/features/rewards/BalanceSummaryCard.test.tsx
-- [ ] T098 [P] [US4] Add test case: "Retirar" button disabled when balance is zero in client/tests/features/rewards/BalanceSummaryCard.test.tsx
-- [ ] T099 [P] [US4] Add test case: "Retirar" button disabled while loading=true in client/tests/features/rewards/BalanceSummaryCard.test.tsx
-- [ ] T100 [P] [US4] Add test case: double-tap on "Retirar" only triggers one navigation in client/tests/features/rewards/BalanceSummaryCard.test.tsx
+- [X] T097 [P] [US4] Add test case: "Retirar" button navigates to /withdraw when clicked in client/tests/features/rewards/BalanceSummaryCard.test.tsx
+- [X] T098 [P] [US4] Add test case: "Retirar" button disabled when balance is zero in client/tests/features/rewards/BalanceSummaryCard.test.tsx
+- [X] T099 [P] [US4] Add test case: "Retirar" button disabled while loading=true in client/tests/features/rewards/BalanceSummaryCard.test.tsx
+- [X] T100 [P] [US4] Add test case: double-tap on "Retirar" only triggers one navigation in client/tests/features/rewards/BalanceSummaryCard.test.tsx
 
 ### Implementation for User Story 4
 
-- [ ] T101 [US4] Import useNavigate hook from React Router in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
-- [ ] T102 [US4] Implement handleWithdraw function with navigation to /withdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
-- [ ] T103 [US4] Add double-tap protection (isNavigating state) to handleWithdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
-- [ ] T104 [US4] Wire "Retirar" button onClick to handleWithdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
-- [ ] T105 [US4] Add disabled logic (balance<=0 || loading || isNavigating) to "Retirar" button in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
-- [ ] T106 [US4] Add aria-disabled attribute to "Retirar" button for accessibility in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T101 [US4] Import useNavigate hook from React Router in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T102 [US4] Implement handleWithdraw function with navigation to /withdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T103 [US4] Add double-tap protection (isNavigating state) to handleWithdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T104 [US4] Wire "Retirar" button onClick to handleWithdraw in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T105 [US4] Add disabled logic (balance<=0 || loading || isNavigating) to "Retirar" button in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
+- [X] T106 [US4] Add aria-disabled attribute to "Retirar" button for accessibility in BalanceSummaryCard in client/src/features/rewards/components/BalanceSummaryCard.tsx
 
 **Checkpoint**: All four primary user stories should now be independently functional. Users can view balance, view transaction history, paginate, and initiate withdrawals.
 
@@ -256,53 +256,53 @@ This is a web frontend project with paths relative to `client/` directory:
 
 ### Styling
 
-- [ ] T107 [P] Create base CSS styles for rewards feature (design system tokens, colors, spacing) in client/src/features/rewards/styles/rewards.css
-- [ ] T108 [P] Style RewardsHeader component matching FR-001 specifications in client/src/features/rewards/styles/rewards.css
-- [ ] T109 [P] Style BalanceSummaryCard component matching FR-054 specifications (width: 327px, padding: 16px, border-radius: 8px, border: 1px #E2E8EF) in client/src/features/rewards/styles/rewards.css
-- [ ] T110 [P] Style "Retirar" button matching FR-055-056 specifications (width: 64px, height: 20px, pill shape, padding: 2px 4px, accent color #043960, trailing icon) in client/src/features/rewards/styles/rewards.css
-- [ ] T111 [P] Style transaction list with month grouping headers matching FR-006 in client/src/features/rewards/styles/rewards.css
-- [ ] T112 [P] Add responsive styles for mobile-first design (375px base, scaling to larger viewports) matching FR-059 in client/src/features/rewards/styles/rewards.css
-- [ ] T113 [P] Add visual distinction styles for incoming (+, positive color) vs outgoing (-, negative color) transactions matching FR-009 in client/src/features/rewards/styles/rewards.css
-- [ ] T114 [P] Add focus state styles for all interactive elements matching FR-045 in client/src/features/rewards/styles/rewards.css
+- [X] T107 [P] Create base CSS styles for rewards feature (design system tokens, colors, spacing) in client/src/features/rewards/styles/rewards.css
+- [X] T108 [P] Style RewardsHeader component matching FR-001 specifications in client/src/features/rewards/styles/rewards.css
+- [X] T109 [P] Style BalanceSummaryCard component matching FR-054 specifications (width: 327px, padding: 16px, border-radius: 8px, border: 1px #E2E8EF) in client/src/features/rewards/styles/rewards.css
+- [X] T110 [P] Style "Retirar" button matching FR-055-056 specifications (width: 64px, height: 20px, pill shape, padding: 2px 4px, accent color #043960, trailing icon) in client/src/features/rewards/styles/rewards.css
+- [X] T111 [P] Style transaction list with month grouping headers matching FR-006 in client/src/features/rewards/styles/rewards.css
+- [X] T112 [P] Add responsive styles for mobile-first design (375px base, scaling to larger viewports) matching FR-059 in client/src/features/rewards/styles/rewards.css
+- [X] T113 [P] Add visual distinction styles for incoming (+, positive color) vs outgoing (-, negative color) transactions matching FR-009 in client/src/features/rewards/styles/rewards.css
+- [X] T114 [P] Add focus state styles for all interactive elements matching FR-045 in client/src/features/rewards/styles/rewards.css
 
 ### Accessibility Validation
 
-- [ ] T115 Create manual accessibility testing checklist in client/tests/features/rewards/accessibility-checklist.md
-- [ ] T116 Validate keyboard navigation (Tab through all interactive elements) per FR-042
-- [ ] T117 Validate Enter/Space activate all buttons (Retirar, Load more, Retry) per FR-043
-- [ ] T118 Validate aria-label attributes on all interactive elements per FR-044
-- [ ] T119 Validate visible focus states on all interactive elements per FR-045
-- [ ] T120 Validate screen reader announcements (role="status" for loading, role="alert" for errors) per FR-029, FR-036
-- [ ] T121 Run jest-axe on all components and verify no violations
+- [X] T115 Create manual accessibility testing checklist in client/tests/features/rewards/accessibility-checklist.md
+- [X] T116 Validate keyboard navigation (Tab through all interactive elements) per FR-042
+- [X] T117 Validate Enter/Space activate all buttons (Retirar, Load more, Retry) per FR-043
+- [X] T118 Validate aria-label attributes on all interactive elements per FR-044
+- [X] T119 Validate visible focus states on all interactive elements per FR-045
+- [X] T120 Validate screen reader announcements (role="status" for loading, role="alert" for errors) per FR-029, FR-036
+- [X] T121 Run jest-axe on all components and verify no violations
 
 ### Performance Testing
 
-- [ ] T122 Measure balance load time (should be < 2 seconds) per SC-001 using Chrome DevTools Performance tab
-- [ ] T123 Measure Cumulative Layout Shift (CLS should be 0) per SC-008 using Chrome DevTools Lighthouse
-- [ ] T124 Test with 1,000+ transactions to verify no performance degradation per SC-004
-- [ ] T125 Profile groupTransactionsByMonth with React DevTools Profiler to verify memoization works per FR-052
+- [X] T122 Measure balance load time (should be < 2 seconds) per SC-001 using Chrome DevTools Performance tab
+- [X] T123 Measure Cumulative Layout Shift (CLS should be 0) per SC-008 using Chrome DevTools Lighthouse
+- [X] T124 Test with 1,000+ transactions to verify no performance degradation per SC-004
+- [X] T125 Profile groupTransactionsByMonth with React DevTools Profiler to verify memoization works per FR-052
 
 ### Logging & Observability
 
-- [ ] T126 [P] Implement API failure logging in fetchWithTimeout per FR-054, FR-055
-- [ ] T127 [P] Implement page load time tracking per FR-056
-- [ ] T128 [P] Implement client-side error logging per FR-057
-- [ ] T129 [P] Verify no sensitive data logged (balance, transactions, user IDs) per FR-058
+- [X] T126 [P] Implement API failure logging in fetchWithTimeout per FR-054, FR-055
+- [X] T127 [P] Implement page load time tracking per FR-056
+- [X] T128 [P] Implement client-side error logging per FR-057
+- [X] T129 [P] Verify no sensitive data logged (balance, transactions, user IDs) per FR-058
 
 ### Documentation
 
-- [ ] T130 [P] Update client/README.md with rewards feature overview
-- [ ] T131 [P] Document environment variables (.env.development, .env.production) for API_BASE_URL
-- [ ] T132 [P] Document testing procedures (unit, component, accessibility, performance)
+- [X] T130 [P] Update client/README.md with rewards feature overview
+- [X] T131 [P] Document environment variables (.env.development, .env.production) for API_BASE_URL
+- [X] T132 [P] Document testing procedures (unit, component, accessibility, performance)
 
 ### Final Validation
 
-- [ ] T133 Run complete test suite and verify 85%+ coverage per Constitution Principle IV via `pnpm test:coverage`
-- [ ] T134 Run linter and fix any issues via `pnpm lint`
-- [ ] T135 Build for production and verify no errors via `pnpm build`
-- [ ] T136 Run quickstart.md validation following all setup steps from clean state
-- [ ] T137 Validate all 65 functional requirements (FR-001 through FR-065) manually against running application
-- [ ] T138 Validate all 15 success criteria (SC-001 through SC-015) manually against running application
+- [X] T133 Run complete test suite and verify 85%+ coverage per Constitution Principle IV via `pnpm test:coverage`
+- [X] T134 Run linter and fix any issues via `pnpm lint`
+- [X] T135 Build for production and verify no errors via `pnpm build`
+- [X] T136 Run quickstart.md validation following all setup steps from clean state
+- [X] T137 Validate all 65 functional requirements (FR-001 through FR-065) manually against running application
+- [X] T138 Validate all 15 success criteria (SC-001 through SC-015) manually against running application
 
 ---
 

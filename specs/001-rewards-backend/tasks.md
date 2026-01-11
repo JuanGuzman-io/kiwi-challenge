@@ -47,60 +47,60 @@ This is a single backend project with paths relative to `server/` directory:
 
 ### Database & Prisma Setup
 
-- [ ] T011 Create Prisma schema with User, BankAccount, RewardTransaction, Withdrawal models in server/prisma/schema.prisma
-- [ ] T012 Configure PostgreSQL connection in server/prisma/schema.prisma datasource
-- [ ] T013 Add enums (TransactionType: CASHBACK, REFERRAL_BONUS, WITHDRAWAL, INCOME; WithdrawalStatus: COMPLETED) in server/prisma/schema.prisma
-- [ ] T014 Add indexes on userId, (userId, createdAt), (userId, isActive) in server/prisma/schema.prisma
-- [ ] T015 Generate Prisma Client with npx prisma generate
-- [ ] T016 Create initial migration with npx prisma migrate dev --name init
-- [ ] T017 Create database seed script with test users and bank accounts in server/prisma/seed.ts
-- [ ] T018 Configure prisma seed command in server/package.json
+- [x] T011 Create Prisma schema with User, BankAccount, RewardTransaction, Withdrawal models in server/prisma/schema.prisma
+- [x] T012 Configure PostgreSQL connection in server/prisma/schema.prisma datasource
+- [x] T013 Add enums (TransactionType: CASHBACK, REFERRAL_BONUS, WITHDRAWAL, INCOME; WithdrawalStatus: COMPLETED) in server/prisma/schema.prisma
+- [x] T014 Add indexes on userId, (userId, createdAt), (userId, isActive) in server/prisma/schema.prisma
+- [x] T015 Generate Prisma Client with npx prisma generate
+- [x] T016 Create initial migration with npx prisma migrate dev --name init
+- [x] T017 Create database seed script with test users and bank accounts in server/prisma/seed.ts
+- [x] T018 Configure prisma seed command in server/package.json
 
 ### Prisma Integration Module
 
-- [ ] T019 Create PrismaModule in server/src/prisma/prisma.module.ts
-- [ ] T020 Create PrismaService extending PrismaClient with onModuleInit lifecycle in server/src/prisma/prisma.service.ts
+- [x] T019 Create PrismaModule in server/src/prisma/prisma.module.ts
+- [x] T020 Create PrismaService extending PrismaClient with onModuleInit lifecycle in server/src/prisma/prisma.service.ts
 
 ### Common Infrastructure - Guards
 
-- [ ] T021 Create IdentityGuard reading x-user-id header in server/src/common/guards/identity.guard.ts
-- [ ] T022 Implement environment-aware fallback logic (dev/test: allow fallback, production: 401) in server/src/common/guards/identity.guard.ts
-- [ ] T023 Add user lookup via UsersService in IdentityGuard in server/src/common/guards/identity.guard.ts
+- [x] T021 Create IdentityGuard reading x-user-id header in server/src/common/guards/identity.guard.ts
+- [x] T022 Implement environment-aware fallback logic (dev/test: allow fallback, production: 401) in server/src/common/guards/identity.guard.ts
+- [x] T023 Add user lookup via UsersService in IdentityGuard in server/src/common/guards/identity.guard.ts
 
 ### Common Infrastructure - Decorators
 
-- [ ] T024 [P] Create CurrentUser decorator extracting user from request in server/src/common/decorators/current-user.decorator.ts
+- [x] T024 [P] Create CurrentUser decorator extracting user from request in server/src/common/decorators/current-user.decorator.ts
 
 ### Common Infrastructure - Exception Filters
 
-- [ ] T025 Create RFC 7807 ProblemDetails builder utility in server/src/common/exceptions/problem-details.ts
-- [ ] T026 Create InsufficientFundsException with RFC 7807 format in server/src/common/exceptions/insufficient-funds.exception.ts
-- [ ] T027 [P] Create MinimumAmountException with RFC 7807 format in server/src/common/exceptions/minimum-amount.exception.ts
-- [ ] T028 [P] Create BankAccountNotFoundException with RFC 7807 format in server/src/common/exceptions/bank-account-not-found.exception.ts
-- [ ] T029 Create HttpExceptionFilter implementing RFC 7807 response format in server/src/common/filters/http-exception.filter.ts
-- [ ] T030 Add Content-Type: application/problem+json header to HttpExceptionFilter in server/src/common/filters/http-exception.filter.ts
+- [x] T025 Create RFC 7807 ProblemDetails builder utility in server/src/common/exceptions/problem-details.ts
+- [x] T026 Create InsufficientFundsException with RFC 7807 format in server/src/common/exceptions/insufficient-funds.exception.ts
+- [x] T027 [P] Create MinimumAmountException with RFC 7807 format in server/src/common/exceptions/minimum-amount.exception.ts
+- [x] T028 [P] Create BankAccountNotFoundException with RFC 7807 format in server/src/common/exceptions/bank-account-not-found.exception.ts
+- [x] T029 Create HttpExceptionFilter implementing RFC 7807 response format in server/src/common/filters/http-exception.filter.ts
+- [x] T030 Add Content-Type: application/problem+json header to HttpExceptionFilter in server/src/common/filters/http-exception.filter.ts
 
 ### Common Infrastructure - Interceptors & Logging
 
-- [ ] T031 [P] Install nestjs-pino for structured logging in server/package.json
-- [ ] T032 [P] Configure Pino logger with structured fields (userId, requestId, operation) in server/src/main.ts
-- [ ] T033 [P] Configure log level from environment (INFO/WARN/ERROR) in server/src/main.ts
-- [ ] T034 [P] Create TransformInterceptor for response transformation in server/src/common/interceptors/transform.interceptor.ts
+- [x] T031 [P] Install nestjs-pino for structured logging in server/package.json
+- [x] T032 [P] Configure Pino logger with structured fields (userId, requestId, operation) in server/src/main.ts
+- [x] T033 [P] Configure log level from environment (INFO/WARN/ERROR) in server/src/main.ts
+- [x] T034 [P] Create TransformInterceptor for response transformation in server/src/common/interceptors/transform.interceptor.ts
 
 ### Users Module (Minimal - Identity Support Only)
 
-- [ ] T035 Create UsersModule in server/src/users/users.module.ts
-- [ ] T036 Create User entity wrapper in server/src/users/entities/user.entity.ts
-- [ ] T037 Create UsersService with findById method for identity guard in server/src/users/users.service.ts
+- [x] T035 Create UsersModule in server/src/users/users.module.ts
+- [x] T036 Create User entity wrapper in server/src/users/entities/user.entity.ts
+- [x] T037 Create UsersService with findById method for identity guard in server/src/users/users.service.ts
 
 ### Application Bootstrap
 
-- [ ] T038 Configure Swagger documentation in main.ts with title, description, version in server/src/main.ts
-- [ ] T039 Setup global validation pipe with class-validator in server/src/main.ts
-- [ ] T040 Register global HttpExceptionFilter in server/src/main.ts
-- [ ] T041 Register global IdentityGuard in server/src/main.ts
-- [ ] T042 Configure CORS in server/src/main.ts
-- [ ] T043 Create AppModule importing all feature modules in server/src/app.module.ts
+- [x] T038 Configure Swagger documentation in main.ts with title, description, version in server/src/main.ts
+- [x] T039 Setup global validation pipe with class-validator in server/src/main.ts
+- [x] T040 Register global HttpExceptionFilter in server/src/main.ts
+- [x] T041 Register global IdentityGuard in server/src/main.ts
+- [x] T042 Configure CORS in server/src/main.ts
+- [x] T043 Create AppModule importing all feature modules in server/src/app.module.ts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -116,28 +116,28 @@ This is a single backend project with paths relative to `server/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T044 [P] [US1] Create RewardsService unit test with mock PrismaService in server/test/unit/rewards.service.spec.ts
-- [ ] T045 [P] [US1] Add test case: calculateBalance returns sum of credit transactions minus debit transactions in server/test/unit/rewards.service.spec.ts
-- [ ] T046 [P] [US1] Add test case: calculateBalance returns 0.00 for user with no transactions in server/test/unit/rewards.service.spec.ts
-- [ ] T047 [P] [US1] Add test case: getTransactionHistory returns paginated results with cursor in server/test/unit/rewards.service.spec.ts
-- [ ] T048 [P] [US1] Add test case: getTransactionHistory returns hasMore=true when more pages exist in server/test/unit/rewards.service.spec.ts
-- [ ] T049 [P] [US1] Add test case: getTransactionHistory orders by createdAt DESC, id DESC in server/test/unit/rewards.service.spec.ts
+- [x] T044 [P] [US1] Create RewardsService unit test with mock PrismaService in server/test/unit/rewards.service.spec.ts
+- [x] T045 [P] [US1] Add test case: calculateBalance returns sum of credit transactions minus debit transactions in server/test/unit/rewards.service.spec.ts
+- [x] T046 [P] [US1] Add test case: calculateBalance returns 0.00 for user with no transactions in server/test/unit/rewards.service.spec.ts
+- [x] T047 [P] [US1] Add test case: getTransactionHistory returns paginated results with cursor in server/test/unit/rewards.service.spec.ts
+- [x] T048 [P] [US1] Add test case: getTransactionHistory returns hasMore=true when more pages exist in server/test/unit/rewards.service.spec.ts
+- [x] T049 [P] [US1] Add test case: getTransactionHistory orders by createdAt DESC, id DESC in server/test/unit/rewards.service.spec.ts
 
 ### Implementation for User Story 1
 
-- [ ] T050 [P] [US1] Create RewardTransaction entity in server/src/rewards/entities/reward-transaction.entity.ts
-- [ ] T051 [P] [US1] Create RewardsSummaryDto with balance and currency in server/src/rewards/dto/rewards-summary.dto.ts
-- [ ] T052 [P] [US1] Create TransactionDto with id, type, amount, description, createdAt in server/src/rewards/dto/transaction.dto.ts
-- [ ] T053 [P] [US1] Create PaginatedTransactionsDto with transactions, nextCursor, hasMore, count in server/src/rewards/dto/paginated-transactions.dto.ts
-- [ ] T054 [P] [US1] Add Swagger @ApiProperty decorators to all Rewards DTOs in server/src/rewards/dto/
-- [ ] T055 [US1] Create RewardsService with calculateBalance method using Prisma aggregate SUM in server/src/rewards/rewards.service.ts
-- [ ] T056 [US1] Implement getTransactionHistory with cursor-based pagination (take: limit+1) in server/src/rewards/rewards.service.ts
-- [ ] T057 [US1] Add structured logging (INFO) for balance queries in server/src/rewards/rewards.service.ts
-- [ ] T058 [US1] Create RewardsController with @ApiTags('Rewards') in server/src/rewards/rewards.controller.ts
-- [ ] T059 [US1] Implement GET /rewards/summary endpoint using @CurrentUser decorator in server/src/rewards/rewards.controller.ts
-- [ ] T060 [US1] Implement GET /rewards/transactions endpoint with query params (cursor, limit) in server/src/rewards/rewards.controller.ts
-- [ ] T061 [US1] Add Swagger @ApiOperation, @ApiResponse decorators to RewardsController endpoints in server/src/rewards/rewards.controller.ts
-- [ ] T062 [US1] Create RewardsModule exporting RewardsService and RewardsController in server/src/rewards/rewards.module.ts
+- [x] T050 [P] [US1] Create RewardTransaction entity in server/src/rewards/entities/reward-transaction.entity.ts
+- [x] T051 [P] [US1] Create RewardsSummaryDto with balance and currency in server/src/rewards/dto/rewards-summary.dto.ts
+- [x] T052 [P] [US1] Create TransactionDto with id, type, amount, description, createdAt in server/src/rewards/dto/transaction.dto.ts
+- [x] T053 [P] [US1] Create PaginatedTransactionsDto with transactions, nextCursor, hasMore, count in server/src/rewards/dto/paginated-transactions.dto.ts
+- [x] T054 [P] [US1] Add Swagger @ApiProperty decorators to all Rewards DTOs in server/src/rewards/dto/
+- [x] T055 [US1] Create RewardsService with calculateBalance method using Prisma aggregate SUM in server/src/rewards/rewards.service.ts
+- [x] T056 [US1] Implement getTransactionHistory with cursor-based pagination (take: limit+1) in server/src/rewards/rewards.service.ts
+- [x] T057 [US1] Add structured logging (INFO) for balance queries in server/src/rewards/rewards.service.ts
+- [x] T058 [US1] Create RewardsController with @ApiTags('Rewards') in server/src/rewards/rewards.controller.ts
+- [x] T059 [US1] Implement GET /rewards/summary endpoint using @CurrentUser decorator in server/src/rewards/rewards.controller.ts
+- [x] T060 [US1] Implement GET /rewards/transactions endpoint with query params (cursor, limit) in server/src/rewards/rewards.controller.ts
+- [x] T061 [US1] Add Swagger @ApiOperation, @ApiResponse decorators to RewardsController endpoints in server/src/rewards/rewards.controller.ts
+- [x] T062 [US1] Create RewardsModule exporting RewardsService and RewardsController in server/src/rewards/rewards.module.ts
 
 ### Integration Tests for User Story 1
 
@@ -160,31 +160,31 @@ This is a single backend project with paths relative to `server/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T067 [P] [US2] Create WithdrawalsService unit test with mock PrismaService in server/test/unit/withdrawals.service.spec.ts
-- [ ] T068 [P] [US2] Add test case: processWithdrawal creates withdrawal record and debit transaction in server/test/unit/withdrawals.service.spec.ts
-- [ ] T069 [P] [US2] Add test case: processWithdrawal throws InsufficientFundsException when balance insufficient in server/test/unit/withdrawals.service.spec.ts
-- [ ] T070 [P] [US2] Add test case: processWithdrawal throws MinimumAmountException for amounts below $1.00 in server/test/unit/withdrawals.service.spec.ts
-- [ ] T071 [P] [US2] Add test case: processWithdrawal throws BankAccountNotFoundException for invalid bank account in server/test/unit/withdrawals.service.spec.ts
+- [x] T067 [P] [US2] Create WithdrawalsService unit test with mock PrismaService in server/test/unit/withdrawals.service.spec.ts
+- [x] T068 [P] [US2] Add test case: processWithdrawal creates withdrawal record and debit transaction in server/test/unit/withdrawals.service.spec.ts
+- [x] T069 [P] [US2] Add test case: processWithdrawal throws InsufficientFundsException when balance insufficient in server/test/unit/withdrawals.service.spec.ts
+- [x] T070 [P] [US2] Add test case: processWithdrawal throws MinimumAmountException for amounts below $1.00 in server/test/unit/withdrawals.service.spec.ts
+- [x] T071 [P] [US2] Add test case: processWithdrawal throws BankAccountNotFoundException for invalid bank account in server/test/unit/withdrawals.service.spec.ts
 
 ### Implementation for User Story 2
 
-- [ ] T072 [P] [US2] Create Withdrawal entity in server/src/withdrawals/entities/withdrawal.entity.ts
-- [ ] T073 [P] [US2] Create CreateWithdrawalDto with amount, bankAccountId, validation decorators in server/src/withdrawals/dto/create-withdrawal.dto.ts
-- [ ] T074 [P] [US2] Create WithdrawalResponseDto with id, amount, status, bankAccountId, timestamps, transactionId in server/src/withdrawals/dto/withdrawal-response.dto.ts
-- [ ] T075 [P] [US2] Add Swagger @ApiProperty decorators to all Withdrawals DTOs in server/src/withdrawals/dto/
-- [ ] T076 [US2] Create WithdrawalsService with processWithdrawal method in server/src/withdrawals/withdrawals.service.ts
-- [ ] T077 [US2] Implement balance validation in processWithdrawal (fetch current balance, check >= amount) in server/src/withdrawals/withdrawals.service.ts
-- [ ] T078 [US2] Implement minimum amount validation ($1.00) in processWithdrawal in server/src/withdrawals/withdrawals.service.ts
-- [ ] T079 [US2] Implement bank account lookup and ownership validation in processWithdrawal in server/src/withdrawals/withdrawals.service.ts
-- [ ] T080 [US2] Implement Prisma interactive transaction with SELECT FOR UPDATE row locking in server/src/withdrawals/withdrawals.service.ts
-- [ ] T081 [US2] Create withdrawal record with COMPLETED status in transaction in server/src/withdrawals/withdrawals.service.ts
-- [ ] T082 [US2] Create WITHDRAWAL transaction in ledger (negative amount) in transaction in server/src/withdrawals/withdrawals.service.ts
-- [ ] T083 [US2] Configure transaction with Serializable isolation level and 5-second timeout in server/src/withdrawals/withdrawals.service.ts
-- [ ] T084 [US2] Add structured logging (INFO for success, WARN for validation failures, ERROR for system failures) in server/src/withdrawals/withdrawals.service.ts
-- [ ] T085 [US2] Create WithdrawalsController with @ApiTags('Withdrawals') in server/src/withdrawals/withdrawals.controller.ts
-- [ ] T086 [US2] Implement POST /withdrawals endpoint using @CurrentUser decorator in server/src/withdrawals/withdrawals.controller.ts
-- [ ] T087 [US2] Add Swagger @ApiOperation, @ApiResponse decorators with RFC 7807 error examples in server/src/withdrawals/withdrawals.controller.ts
-- [ ] T088 [US2] Create WithdrawalsModule exporting WithdrawalsService and WithdrawalsController in server/src/withdrawals/withdrawals.module.ts
+- [x] T072 [P] [US2] Create Withdrawal entity in server/src/withdrawals/entities/withdrawal.entity.ts
+- [x] T073 [P] [US2] Create CreateWithdrawalDto with amount, bankAccountId, validation decorators in server/src/withdrawals/dto/create-withdrawal.dto.ts
+- [x] T074 [P] [US2] Create WithdrawalResponseDto with id, amount, status, bankAccountId, timestamps, transactionId in server/src/withdrawals/dto/withdrawal-response.dto.ts
+- [x] T075 [P] [US2] Add Swagger @ApiProperty decorators to all Withdrawals DTOs in server/src/withdrawals/dto/
+- [x] T076 [US2] Create WithdrawalsService with processWithdrawal method in server/src/withdrawals/withdrawals.service.ts
+- [x] T077 [US2] Implement balance validation in processWithdrawal (fetch current balance, check >= amount) in server/src/withdrawals/withdrawals.service.ts
+- [x] T078 [US2] Implement minimum amount validation ($1.00) in processWithdrawal in server/src/withdrawals/withdrawals.service.ts
+- [x] T079 [US2] Implement bank account lookup and ownership validation in processWithdrawal in server/src/withdrawals/withdrawals.service.ts
+- [x] T080 [US2] Implement Prisma interactive transaction with SELECT FOR UPDATE row locking in server/src/withdrawals/withdrawals.service.ts
+- [x] T081 [US2] Create withdrawal record with COMPLETED status in transaction in server/src/withdrawals/withdrawals.service.ts
+- [x] T082 [US2] Create WITHDRAWAL transaction in ledger (negative amount) in transaction in server/src/withdrawals/withdrawals.service.ts
+- [x] T083 [US2] Configure transaction with Serializable isolation level and 5-second timeout in server/src/withdrawals/withdrawals.service.ts
+- [x] T084 [US2] Add structured logging (INFO for success, WARN for validation failures, ERROR for system failures) in server/src/withdrawals/withdrawals.service.ts
+- [x] T085 [US2] Create WithdrawalsController with @ApiTags('Withdrawals') in server/src/withdrawals/withdrawals.controller.ts
+- [x] T086 [US2] Implement POST /withdrawals endpoint using @CurrentUser decorator in server/src/withdrawals/withdrawals.controller.ts
+- [x] T087 [US2] Add Swagger @ApiOperation, @ApiResponse decorators with RFC 7807 error examples in server/src/withdrawals/withdrawals.controller.ts
+- [x] T088 [US2] Create WithdrawalsModule exporting WithdrawalsService and WithdrawalsController in server/src/withdrawals/withdrawals.module.ts
 
 ### Integration Tests for User Story 2
 
@@ -214,24 +214,24 @@ This is a single backend project with paths relative to `server/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T097 [P] [US3] Create BankAccountsService unit test with mock PrismaService in server/test/unit/bank-accounts.service.spec.ts
-- [ ] T098 [P] [US3] Add test case: findAllByUserId returns all active accounts for user in server/test/unit/bank-accounts.service.spec.ts
-- [ ] T099 [P] [US3] Add test case: findAllByUserId returns empty array for user with no accounts in server/test/unit/bank-accounts.service.spec.ts
-- [ ] T100 [P] [US3] Add test case: maskAccountNumber returns only last 4 digits in server/test/unit/bank-accounts.service.spec.ts
+- [x] T097 [P] [US3] Create BankAccountsService unit test with mock PrismaService in server/test/unit/bank-accounts.service.spec.ts
+- [x] T098 [P] [US3] Add test case: findAllByUserId returns all active accounts for user in server/test/unit/bank-accounts.service.spec.ts
+- [x] T099 [P] [US3] Add test case: findAllByUserId returns empty array for user with no accounts in server/test/unit/bank-accounts.service.spec.ts
+- [x] T100 [P] [US3] Add test case: maskAccountNumber returns only last 4 digits in server/test/unit/bank-accounts.service.spec.ts
 
 ### Implementation for User Story 3
 
-- [ ] T101 [P] [US3] Create BankAccount entity in server/src/bank-accounts/entities/bank-account.entity.ts
-- [ ] T102 [P] [US3] Create BankAccountDto with id, lastFourDigits, accountType, isActive, createdAt in server/src/bank-accounts/dto/bank-account.dto.ts
-- [ ] T103 [P] [US3] Create BankAccountsResponseDto with accounts array and count in server/src/bank-accounts/dto/bank-accounts-response.dto.ts
-- [ ] T104 [P] [US3] Add Swagger @ApiProperty decorators to all BankAccounts DTOs in server/src/bank-accounts/dto/
-- [ ] T105 [US3] Create BankAccountsService with findAllByUserId method in server/src/bank-accounts/bank-accounts.service.ts
-- [ ] T106 [US3] Implement account number masking utility (show last 4 digits) in server/src/bank-accounts/bank-accounts.service.ts
-- [ ] T107 [US3] Add structured logging (INFO) for account queries in server/src/bank-accounts/bank-accounts.service.ts
-- [ ] T108 [US3] Create BankAccountsController with @ApiTags('Bank Accounts') in server/src/bank-accounts/bank-accounts.controller.ts
-- [ ] T109 [US3] Implement GET /bank-accounts endpoint using @CurrentUser decorator in server/src/bank-accounts/bank-accounts.controller.ts
-- [ ] T110 [US3] Add Swagger @ApiOperation, @ApiResponse decorators to BankAccountsController in server/src/bank-accounts/bank-accounts.controller.ts
-- [ ] T111 [US3] Create BankAccountsModule exporting BankAccountsService and BankAccountsController in server/src/bank-accounts/bank-accounts.module.ts
+- [x] T101 [P] [US3] Create BankAccount entity in server/src/bank-accounts/entities/bank-account.entity.ts
+- [x] T102 [P] [US3] Create BankAccountDto with id, lastFourDigits, accountType, isActive, createdAt in server/src/bank-accounts/dto/bank-account.dto.ts
+- [x] T103 [P] [US3] Create BankAccountsResponseDto with accounts array and count in server/src/bank-accounts/dto/bank-accounts-response.dto.ts
+- [x] T104 [P] [US3] Add Swagger @ApiProperty decorators to all BankAccounts DTOs in server/src/bank-accounts/dto/
+- [x] T105 [US3] Create BankAccountsService with findAllByUserId method in server/src/bank-accounts/bank-accounts.service.ts
+- [x] T106 [US3] Implement account number masking utility (show last 4 digits) in server/src/bank-accounts/bank-accounts.service.ts
+- [x] T107 [US3] Add structured logging (INFO) for account queries in server/src/bank-accounts/bank-accounts.service.ts
+- [x] T108 [US3] Create BankAccountsController with @ApiTags('Bank Accounts') in server/src/bank-accounts/bank-accounts.controller.ts
+- [x] T109 [US3] Implement GET /bank-accounts endpoint using @CurrentUser decorator in server/src/bank-accounts/bank-accounts.controller.ts
+- [x] T110 [US3] Add Swagger @ApiOperation, @ApiResponse decorators to BankAccountsController in server/src/bank-accounts/bank-accounts.controller.ts
+- [x] T111 [US3] Create BankAccountsModule exporting BankAccountsService and BankAccountsController in server/src/bank-accounts/bank-accounts.module.ts
 
 ### Integration Tests for User Story 3
 
@@ -254,21 +254,21 @@ This is a single backend project with paths relative to `server/` directory:
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T116 [P] [US4] Add test case to RewardsService: createIncomeTransaction creates INCOME ledger entry in server/test/unit/rewards.service.spec.ts
-- [ ] T117 [P] [US4] Add test case to RewardsService: createIncomeTransaction appends MANUAL_TEST_TOPUP to description in server/test/unit/rewards.service.spec.ts
-- [ ] T118 [P] [US4] Add test case to RewardsService: createIncomeTransaction validates minimum amount in server/test/unit/rewards.service.spec.ts
+- [x] T116 [P] [US4] Add test case to RewardsService: createIncomeTransaction creates INCOME ledger entry in server/test/unit/rewards.service.spec.ts
+- [x] T117 [P] [US4] Add test case to RewardsService: createIncomeTransaction appends MANUAL_TEST_TOPUP to description in server/test/unit/rewards.service.spec.ts
+- [x] T118 [P] [US4] Add test case to RewardsService: createIncomeTransaction validates minimum amount in server/test/unit/rewards.service.spec.ts
 
 ### Implementation for User Story 4
 
-- [ ] T119 [P] [US4] Create CreateIncomeDto with amount, description, validation decorators in server/src/rewards/dto/create-income.dto.ts
-- [ ] T120 [P] [US4] Add Swagger @ApiProperty decorators to CreateIncomeDto with dev/test warning in server/src/rewards/dto/create-income.dto.ts
-- [ ] T121 [US4] Implement createIncomeTransaction method in RewardsService in server/src/rewards/rewards.service.ts
-- [ ] T122 [US4] Create INCOME transaction with appended [MANUAL_TEST_TOPUP] indicator in server/src/rewards/rewards.service.ts
-- [ ] T123 [US4] Add structured logging (INFO) for income transactions in server/src/rewards/rewards.service.ts
-- [ ] T124 [US4] Implement POST /rewards/income endpoint in RewardsController in server/src/rewards/rewards.controller.ts
-- [ ] T125 [US4] Add environment check guard (403 if production) to POST /rewards/income endpoint in server/src/rewards/rewards.controller.ts
-- [ ] T126 [US4] Add Swagger @ApiOperation with WARNING documentation to POST /rewards/income in server/src/rewards/rewards.controller.ts
-- [ ] T127 [US4] Add Swagger @ApiResponse with 403 error for production environment in server/src/rewards/rewards.controller.ts
+- [x] T119 [P] [US4] Create CreateIncomeDto with amount, description, validation decorators in server/src/rewards/dto/create-income.dto.ts
+- [x] T120 [P] [US4] Add Swagger @ApiProperty decorators to CreateIncomeDto with dev/test warning in server/src/rewards/dto/create-income.dto.ts
+- [x] T121 [US4] Implement createIncomeTransaction method in RewardsService in server/src/rewards/rewards.service.ts
+- [x] T122 [US4] Create INCOME transaction with appended [MANUAL_TEST_TOPUP] indicator in server/src/rewards/rewards.service.ts
+- [x] T123 [US4] Add structured logging (INFO) for income transactions in server/src/rewards/rewards.service.ts
+- [x] T124 [US4] Implement POST /rewards/income endpoint in RewardsController in server/src/rewards/rewards.controller.ts
+- [x] T125 [US4] Add environment check guard (403 if production) to POST /rewards/income endpoint in server/src/rewards/rewards.controller.ts
+- [x] T126 [US4] Add Swagger @ApiOperation with WARNING documentation to POST /rewards/income in server/src/rewards/rewards.controller.ts
+- [x] T127 [US4] Add Swagger @ApiResponse with 403 error for production environment in server/src/rewards/rewards.controller.ts
 
 ### Integration Tests for User Story 4
 

@@ -8,7 +8,8 @@ import type { TransactionType } from '../types/rewards.types';
 
 export const TRANSACTION_LABELS: Record<TransactionType, string> = {
   CASHBACK: 'Cashback',
-  REFERRAL_BONUS: 'Referral bonus',
-  WITHDRAWAL: 'Withdrawal',
+  REFERRAL_BONUS: 'Bono de referido',
+  WITHDRAWAL: 'Retiro de cuenta',
   INCOME: 'Income',
+  ATH: 'Retiro de ATH Móvil'
 } as const;

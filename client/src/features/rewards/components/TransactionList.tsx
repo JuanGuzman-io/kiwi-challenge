@@ -5,6 +5,9 @@
  * Per FR-026: Display skeleton loader while loading
  * Per FR-028: Display empty state when no transactions
  * Per FR-034: Display error message with retry action on API failure
+ * Per FR-016: Support pagination with "Load more" button
+ * Per FR-017: Append new transactions without resetting existing items
+ * Per FR-027: Display inline loading indicator for pagination
  */
 
 import { useMemo } from 'react';
@@ -12,13 +15,22 @@ import { useRewardsTransactions } from '../hooks/useRewardsTransactions';
 import { groupTransactionsByMonth } from '../utils/groupTransactionsByMonth';
 import { formatMonthHeader } from '../utils/formatMonthHeader';
 import { TransactionItem } from './TransactionItem';
+import { LoadMoreButton } from './LoadMoreButton';
 import { LoadingState } from '../../../components/LoadingState';
 import { ErrorState } from '../../../components/ErrorState';
 import { EmptyState } from '../../../components/EmptyState';
 import { ERROR_MESSAGES } from '../constants/errorMessages';
 
 export function TransactionList() {
-  const { data: transactions, loading, error, refetch } = useRewardsTransactions();
+  const {
+    data: transactions,
+    loading,
+    error,
+    hasMore,
+    loadingMore,
+    loadMore,
+    refetch,
+  } = useRewardsTransactions();
 
   // Memoize grouping computation per FR-052
   const groupedTransactions = useMemo(() => {
@@ -54,7 +66,6 @@ export function TransactionList() {
   // Data loaded with grouped transactions
   return (
     <div className="transaction-list">
-      <h2 className="transaction-list-title">Historial</h2>
       {groupedTransactions.map((group) => (
         <div key={`${group.year}-${group.month}`} className="transaction-group">
           <h3 className="transaction-group-header">
@@ -67,7 +78,16 @@ export function TransactionList() {
           </div>
         </div>
       ))}
-      {/* LoadMoreButton will be added in Phase 5 (US3) */}
+
+      {/* Inline loading indicator while loading more */}
+      {loadingMore && <LoadingState type="pagination" />}
+
+      {/* Load more button */}
+      <LoadMoreButton
+        hasMore={hasMore}
+        loadingMore={loadingMore}
+        onLoadMore={loadMore}
+      />
     </div>
   );
 }

@@ -24,7 +24,7 @@ export interface RewardsSummary {
 /**
  * Transaction type enumeration
  */
-export type TransactionType = 'CASHBACK' | 'REFERRAL_BONUS' | 'WITHDRAWAL' | 'INCOME';
+export type TransactionType = 'CASHBACK' | 'REFERRAL_BONUS' | 'WITHDRAWAL' | 'INCOME' | 'ATH';
 
 /**
  * Single reward activity (credit or debit)

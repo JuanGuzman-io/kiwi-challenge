@@ -142,4 +142,115 @@ describe('TransactionList', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  // T086 & T093: "Load more" button appends transactions without layout jump
+  it('should append transactions when "Load more" is clicked without layout jump', async () => {
+    const { container } = render(<TransactionList />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Historial')).toBeInTheDocument();
+    });
+
+    // Should show "Load more" button
+    const loadMoreButton = screen.getByRole('button', { name: /Cargar más transacciones/i });
+    expect(loadMoreButton).toBeInTheDocument();
+
+    // Get initial transaction count
+    const initialItems = container.querySelectorAll('.transaction-item');
+    const initialCount = initialItems.length;
+
+    // Click "Load more"
+    loadMoreButton.click();
+
+    // Wait for more transactions to load
+    await waitFor(() => {
+      const updatedItems = container.querySelectorAll('.transaction-item');
+      expect(updatedItems.length).toBeGreaterThan(initialCount);
+    });
+
+    // Button should be hidden after loading all transactions
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Cargar más transacciones/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // T094: "Load more" button disabled while loadingMore=true
+  it('should disable "Load more" button while loading', async () => {
+    render(<TransactionList />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Historial')).toBeInTheDocument();
+    });
+
+    const loadMoreButton = screen.getByRole('button', { name: /Cargar más transacciones/i });
+
+    // Click button
+    loadMoreButton.click();
+
+    // Button should be disabled while loading
+    await waitFor(() => {
+      expect(loadMoreButton).toBeDisabled();
+    });
+  });
+
+  // T095: "Load more" button hidden when hasMore=false
+  it('should hide "Load more" button when no more transactions', async () => {
+    // Override handler to return single page
+    server.use(
+      http.get('/rewards/transactions', () => {
+        return HttpResponse.json({
+          transactions: [
+            {
+              id: 'txn_001',
+              type: 'CASHBACK',
+              amount: 25.50,
+              description: 'Test transaction',
+              createdAt: '2025-09-15T14:30:00Z',
+            },
+          ],
+          nextCursor: null,
+          hasMore: false,
+          count: 1,
+        });
+      })
+    );
+
+    render(<TransactionList />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Historial')).toBeInTheDocument();
+    });
+
+    // "Load more" button should not be present
+    expect(screen.queryByRole('button', { name: /Cargar más/i })).not.toBeInTheDocument();
+  });
+
+  // T096: Pagination maintains month grouping across pages
+  it('should maintain month grouping when loading more transactions', async () => {
+    render(<TransactionList />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Historial')).toBeInTheDocument();
+    });
+
+    // Should have month headers
+    expect(screen.getByText(/Septiembre 2025/i)).toBeInTheDocument();
+
+    // Load more
+    const loadMoreButton = screen.getByRole('button', { name: /Cargar más transacciones/i });
+    loadMoreButton.click();
+
+    // Wait for more transactions
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Cargar más transacciones/i })).not.toBeInTheDocument();
+    });
+
+    // Month grouping should still be present
+    expect(screen.getByText(/Septiembre 2025/i)).toBeInTheDocument();
+    expect(screen.getByText(/Agosto 2025/i)).toBeInTheDocument();
+  });
 });

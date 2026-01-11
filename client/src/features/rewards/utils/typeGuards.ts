@@ -10,18 +10,22 @@ import type { PaginatedTransactions } from '../types/api.types';
  * Type guard for Transaction
  * Validates that an object matches the Transaction interface
  */
-export function isValidTransaction(obj: any): obj is Transaction {
+export function isValidTransaction(obj: unknown): obj is Transaction {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
+  const record = obj as Record<string, unknown>;
+
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    typeof obj.id === 'string' &&
-    obj.id.length > 0 &&
-    ['CASHBACK', 'REFERRAL_BONUS', 'WITHDRAWAL', 'INCOME'].includes(obj.type) &&
-    typeof obj.amount === 'number' &&
-    obj.amount !== 0 &&
-    typeof obj.description === 'string' &&
-    typeof obj.createdAt === 'string' &&
-    !isNaN(Date.parse(obj.createdAt))
+    typeof record.id === 'string' &&
+    record.id.length > 0 &&
+    ['CASHBACK', 'REFERRAL_BONUS', 'WITHDRAWAL', 'INCOME'].includes(record.type as string) &&
+    typeof record.amount === 'number' &&
+    record.amount !== 0 &&
+    typeof record.description === 'string' &&
+    typeof record.createdAt === 'string' &&
+    !isNaN(Date.parse(record.createdAt))
   );
 }
 
@@ -29,15 +33,19 @@ export function isValidTransaction(obj: any): obj is Transaction {
  * Type guard for RewardsSummary
  * Validates that an object matches the RewardsSummary interface
  */
-export function isValidRewardsSummary(obj: any): obj is RewardsSummary {
+export function isValidRewardsSummary(obj: unknown): obj is RewardsSummary {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
+  const record = obj as Record<string, unknown>;
+
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    typeof obj.balance === 'number' &&
-    obj.balance >= 0 &&
-    typeof obj.currency === 'string' &&
-    obj.currency.length === 3 &&
-    obj.currency === obj.currency.toUpperCase()
+    typeof record.balance === 'number' &&
+    record.balance >= 0 &&
+    typeof record.currency === 'string' &&
+    record.currency.length === 3 &&
+    record.currency === record.currency.toUpperCase()
   );
 }
 
@@ -45,25 +53,29 @@ export function isValidRewardsSummary(obj: any): obj is RewardsSummary {
  * Type guard for PaginatedTransactions
  * Validates that an object matches the PaginatedTransactions interface
  */
-export function isValidPaginatedTransactions(obj: any): obj is PaginatedTransactions {
+export function isValidPaginatedTransactions(obj: unknown): obj is PaginatedTransactions {
+  if (typeof obj !== 'object' || obj === null) {
+    return false;
+  }
+
+  const record = obj as Record<string, unknown>;
+
   if (
-    typeof obj !== 'object' ||
-    obj === null ||
-    !Array.isArray(obj.transactions) ||
-    typeof obj.hasMore !== 'boolean'
+    !Array.isArray(record.transactions) ||
+    typeof record.hasMore !== 'boolean'
   ) {
     return false;
   }
 
   // Validate nextCursor consistency with hasMore
-  if (obj.hasMore && obj.nextCursor === null) {
+  if (record.hasMore && record.nextCursor === null) {
     return false; // hasMore=true requires a valid nextCursor
   }
 
-  if (!obj.hasMore && obj.nextCursor !== null) {
+  if (!record.hasMore && record.nextCursor !== null) {
     return false; // hasMore=false requires nextCursor=null
   }
 
   // Validate all transactions in array
-  return obj.transactions.every((t: any) => isValidTransaction(t));
+  return record.transactions.every((t: unknown) => isValidTransaction(t));
 }

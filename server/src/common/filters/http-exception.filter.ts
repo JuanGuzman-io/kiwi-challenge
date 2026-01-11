@@ -45,6 +45,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     } else {
       // Handle unknown errors
+      // Log the raw exception for debugging (kept minimal; remove in production)
+      // eslint-disable-next-line no-console
+      console.error('Unhandled exception caught by HttpExceptionFilter:', exception);
       problemDetails = ProblemDetailsBuilder.build(
         'internal-server-error',
         'Internal Server Error',

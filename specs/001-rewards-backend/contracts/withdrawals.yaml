@@ -1,0 +1,284 @@
+openapi: 3.0.3
+info:
+  title: Withdrawals API
+  description: API for managing fund withdrawals to linked bank accounts
+  version: 1.0.0
+  contact:
+    name: Withdrawals API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.rewards.com
+    description: Production server
+
+tags:
+  - name: Withdrawals
+    description: Withdrawal processing and status endpoints
+
+paths:
+  /withdrawals:
+    post:
+      tags:
+        - Withdrawals
+      summary: Create withdrawal request
+      description: |
+        Initiates a withdrawal of funds from the user's rewards balance to a linked bank account.
+
+        The withdrawal:
+        - Validates sufficient balance
+        - Enforces minimum withdrawal amount ($1.00)
+        - Completes immediately with COMPLETED status
+        - Creates a WITHDRAWAL transaction in the ledger
+        - Uses database row locking to prevent concurrent withdrawal race conditions
+      operationId: createWithdrawal
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWithdrawalRequest'
+            example:
+              amount: 50.00
+              bankAccountId: "ba-001"
+      responses:
+        '201':
+          description: Withdrawal created and completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalResponse'
+              example:
+                id: "wd-001"
+                amount: 50.00
+                status: "COMPLETED"
+                bankAccountId: "ba-001"
+                bankAccountLastFour: "1234"
+                createdAt: "2026-01-10T14:30:00Z"
+                completedAt: "2026-01-10T14:30:00Z"
+                transactionId: "tx-004"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Insufficient funds or concurrent modification conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                insufficientFunds:
+                  value:
+                    type: "https://api.rewards.com/problems/insufficient-funds"
+                    title: "Insufficient Funds"
+                    status: 409
+                    detail: "Requested withdrawal amount exceeds available balance"
+                    instance: "/withdrawals"
+                    currentBalance: 25.00
+                    requestedAmount: 50.00
+                minimumAmount:
+                  value:
+                    type: "https://api.rewards.com/problems/minimum-amount-not-met"
+                    title: "Minimum Amount Not Met"
+                    status: 409
+                    detail: "Withdrawal amount must be at least $1.00"
+                    instance: "/withdrawals"
+                    minimumAmount: 1.00
+                    requestedAmount: 0.50
+        '404':
+          description: Bank account not found or not owned by user
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: "https://api.rewards.com/problems/bank-account-not-found"
+                title: "Bank Account Not Found"
+                status: 404
+                detail: "The specified bank account does not exist or is not accessible"
+                instance: "/withdrawals"
+                bankAccountId: "ba-999"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    UserIdHeader:
+      name: x-user-id
+      in: header
+      description: User identifier for development/test identity mechanism
+      required: false
+      schema:
+        type: string
+        example: "test-user-001"
+
+  schemas:
+    CreateWithdrawalRequest:
+      type: object
+      required:
+        - amount
+        - bankAccountId
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 1.00
+          description: Withdrawal amount in USD (minimum $1.00)
+          example: 50.00
+        bankAccountId:
+          type: string
+          description: ID of the linked bank account to withdraw to
+          example: "ba-001"
+
+    WithdrawalResponse:
+      type: object
+      required:
+        - id
+        - amount
+        - status
+        - bankAccountId
+        - bankAccountLastFour
+        - createdAt
+        - completedAt
+        - transactionId
+      properties:
+        id:
+          type: string
+          description: Unique withdrawal identifier
+          example: "wd-001"
+        amount:
+          type: number
+          format: double
+          description: Withdrawal amount
+          example: 50.00
+        status:
+          type: string
+          enum: [COMPLETED]
+          description: Withdrawal status (always COMPLETED for MVP)
+          example: "COMPLETED"
+        bankAccountId:
+          type: string
+          description: ID of the bank account used
+          example: "ba-001"
+        bankAccountLastFour:
+          type: string
+          description: Last 4 digits of the bank account number
+          example: "1234"
+        createdAt:
+          type: string
+          format: date-time
+          description: Withdrawal creation timestamp
+          example: "2026-01-10T14:30:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          description: Withdrawal completion timestamp
+          example: "2026-01-10T14:30:00Z"
+        transactionId:
+          type: string
+          description: ID of the corresponding WITHDRAWAL transaction in the ledger
+          example: "tx-004"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://api.rewards.com/problems/insufficient-funds"
+        title:
+          type: string
+          description: Short human-readable summary
+          example: "Insufficient Funds"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 409
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: "Requested withdrawal amount exceeds available balance"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying this specific occurrence
+          example: "/withdrawals"
+        currentBalance:
+          type: number
+          format: double
+          description: User's current balance (extension field for insufficient funds error)
+          example: 25.00
+        requestedAmount:
+          type: number
+          format: double
+          description: Requested withdrawal amount (extension field for insufficient funds error)
+          example: 50.00
+        minimumAmount:
+          type: number
+          format: double
+          description: Minimum allowed withdrawal amount (extension field for minimum amount error)
+          example: 1.00
+        bankAccountId:
+          type: string
+          description: Bank account identifier (extension field for not found error)
+          example: "ba-999"
+
+  responses:
+    ValidationError:
+      description: Validation error - invalid request parameters
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/validation-error"
+            title: "Validation Error"
+            status: 400
+            detail: "One or more validation errors occurred"
+            instance: "/withdrawals"
+            errors:
+              - "amount must be a positive number"
+              - "bankAccountId must be a non-empty string"
+
+    UnauthorizedError:
+      description: Unauthorized - missing or invalid identity header
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Missing x-user-id header in production environment"
+            instance: "/withdrawals"
+
+    InternalServerError:
+      description: Internal server error - unexpected system failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/internal-server-error"
+            title: "Internal Server Error"
+            status: 500
+            detail: "An unexpected error occurred while processing the withdrawal"
+            instance: "/withdrawals"
+
+  securitySchemes:
+    UserIdHeader:
+      type: apiKey
+      in: header
+      name: x-user-id
+      description: Development/test identity mechanism (disabled in production)

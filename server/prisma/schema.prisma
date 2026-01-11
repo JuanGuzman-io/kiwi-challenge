@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum TransactionType {
+  CASHBACK
+  REFERRAL_BONUS
+  WITHDRAWAL
+  INCOME
+}
+
+enum WithdrawalStatus {
+  COMPLETED
+}
+
+// Models
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bankAccounts BankAccount[]
+  transactions RewardTransaction[]
+  withdrawals  Withdrawal[]
+
+  @@map("users")
+}
+
+model BankAccount {
+  id              String   @id @default(uuid())
+  userId          String
+  accountNumber   String
+  lastFourDigits  String   @db.VarChar(4)
+  accountType     String   @db.VarChar(50)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  withdrawals Withdrawal[]
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@map("bank_accounts")
+}
+
+model RewardTransaction {
+  id           String          @id @default(uuid())
+  userId       String
+  type         TransactionType
+  amount       Decimal         @db.Decimal(10, 2)
+  description  String          @db.VarChar(500)
+  withdrawalId String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  withdrawal Withdrawal? @relation(fields: [withdrawalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([withdrawalId])
+  @@map("reward_transactions")
+}
+
+model Withdrawal {
+  id            String           @id @default(uuid())
+  userId        String
+  amount        Decimal          @db.Decimal(10, 2)
+  bankAccountId String
+  status        WithdrawalStatus @default(COMPLETED)
+  createdAt     DateTime         @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime         @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount         @relation(fields: [bankAccountId], references: [id], onDelete: Restrict)
+  transaction RewardTransaction[]
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([bankAccountId])
+  @@map("withdrawals")
+}

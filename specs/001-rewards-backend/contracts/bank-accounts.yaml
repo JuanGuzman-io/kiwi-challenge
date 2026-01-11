@@ -1,0 +1,199 @@
+openapi: 3.0.3
+info:
+  title: Bank Accounts API
+  description: API for viewing linked bank accounts for withdrawals
+  version: 1.0.0
+  contact:
+    name: Bank Accounts API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.rewards.com
+    description: Production server
+
+tags:
+  - name: Bank Accounts
+    description: Bank account listing and management endpoints
+
+paths:
+  /bank-accounts:
+    get:
+      tags:
+        - Bank Accounts
+      summary: Get user's linked bank accounts
+      description: |
+        Returns a list of all bank accounts linked to the user's account.
+
+        Security features:
+        - Account numbers are masked, showing only last 4 digits
+        - Only returns accounts owned by the authenticated user
+        - Inactive accounts are included but marked with isActive: false
+      operationId: getBankAccounts
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '200':
+          description: Bank accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankAccountsResponse'
+              examples:
+                multipleAccounts:
+                  value:
+                    accounts:
+                      - id: "ba-001"
+                        lastFourDigits: "1234"
+                        accountType: "Checking"
+                        isActive: true
+                        createdAt: "2025-12-15T10:00:00Z"
+                      - id: "ba-002"
+                        lastFourDigits: "5678"
+                        accountType: "Savings"
+                        isActive: true
+                        createdAt: "2025-12-20T14:30:00Z"
+                      - id: "ba-003"
+                        lastFourDigits: "9012"
+                        accountType: "Checking"
+                        isActive: false
+                        createdAt: "2025-11-01T09:00:00Z"
+                    count: 3
+                noAccounts:
+                  value:
+                    accounts: []
+                    count: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    UserIdHeader:
+      name: x-user-id
+      in: header
+      description: User identifier for development/test identity mechanism
+      required: false
+      schema:
+        type: string
+        example: "test-user-001"
+
+  schemas:
+    BankAccountsResponse:
+      type: object
+      required:
+        - accounts
+        - count
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankAccountResponse'
+          description: List of linked bank accounts
+        count:
+          type: integer
+          description: Total number of accounts returned
+          example: 3
+
+    BankAccountResponse:
+      type: object
+      required:
+        - id
+        - lastFourDigits
+        - accountType
+        - isActive
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique bank account identifier
+          example: "ba-001"
+        lastFourDigits:
+          type: string
+          minLength: 4
+          maxLength: 4
+          description: Last 4 digits of the account number (for security)
+          example: "1234"
+        accountType:
+          type: string
+          description: Type of bank account
+          example: "Checking"
+          enum:
+            - Checking
+            - Savings
+        isActive:
+          type: boolean
+          description: Whether the account is active and available for withdrawals
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Account linking timestamp
+          example: "2025-12-15T10:00:00Z"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://api.rewards.com/problems/unauthorized"
+        title:
+          type: string
+          description: Short human-readable summary
+          example: "Unauthorized"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 401
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: "Missing x-user-id header in production environment"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying this specific occurrence
+          example: "/bank-accounts"
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - missing or invalid identity header
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Missing x-user-id header in production environment"
+            instance: "/bank-accounts"
+
+    InternalServerError:
+      description: Internal server error - unexpected system failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/internal-server-error"
+            title: "Internal Server Error"
+            status: 500
+            detail: "An unexpected error occurred while retrieving bank accounts"
+            instance: "/bank-accounts"
+
+  securitySchemes:
+    UserIdHeader:
+      type: apiKey
+      in: header
+      name: x-user-id
+      description: Development/test identity mechanism (disabled in production)

@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Rewards API
+  description: API for managing rewards balance and transaction history
+  version: 1.0.0
+  contact:
+    name: Rewards API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.rewards.com
+    description: Production server
+
+tags:
+  - name: Rewards
+    description: Rewards balance and transaction history endpoints
+
+paths:
+  /rewards/summary:
+    get:
+      tags:
+        - Rewards
+      summary: Get rewards summary
+      description: Returns user's current balance and currency information
+      operationId: getRewardsSummary
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '200':
+          description: Rewards summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardsSummaryResponse'
+              example:
+                balance: 125.50
+                currency: USD
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rewards/transactions:
+    get:
+      tags:
+        - Rewards
+      summary: Get paginated transaction history
+      description: Returns user's transaction history with cursor-based pagination (50 items per page)
+      operationId: getTransactions
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: cursor
+          in: query
+          description: Pagination cursor from previous response
+          required: false
+          schema:
+            type: string
+            example: "clr8x9y3z000008l7e8f8g8h8"
+        - name: limit
+          in: query
+          description: Number of transactions per page (default 50, max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Transaction history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransactionsResponse'
+              example:
+                transactions:
+                  - id: "tx-001"
+                    type: "CASHBACK"
+                    amount: 25.50
+                    description: "Cashback from purchase at Store A"
+                    createdAt: "2026-01-10T12:30:00Z"
+                  - id: "tx-002"
+                    type: "REFERRAL_BONUS"
+                    amount: 10.00
+                    description: "Referral bonus for friend signup"
+                    createdAt: "2026-01-09T15:45:00Z"
+                nextCursor: "tx-002"
+                hasMore: true
+                count: 2
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /rewards/income:
+    post:
+      tags:
+        - Rewards
+      summary: Create manual income transaction (dev/test only)
+      description: |
+        Manually add funds to a user's rewards balance for testing purposes.
+
+        **WARNING**: This endpoint is for development and testing only.
+        It must be disabled or guarded in production environments.
+      operationId: createIncomeTransaction
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncomeRequest'
+            example:
+              amount: 100.00
+              description: "Manual test top-up"
+      responses:
+        '201':
+          description: Income transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+              example:
+                id: "tx-003"
+                type: "INCOME"
+                amount: 100.00
+                description: "Manual test top-up [MANUAL_TEST_TOPUP]"
+                createdAt: "2026-01-10T14:00:00Z"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Endpoint disabled in production
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: "https://api.rewards.com/problems/endpoint-disabled"
+                title: "Endpoint Disabled"
+                status: 403
+                detail: "This endpoint is only available in development and test environments"
+                instance: "/rewards/income"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  parameters:
+    UserIdHeader:
+      name: x-user-id
+      in: header
+      description: User identifier for development/test identity mechanism
+      required: false
+      schema:
+        type: string
+        example: "test-user-001"
+
+  schemas:
+    RewardsSummaryResponse:
+      type: object
+      required:
+        - balance
+        - currency
+      properties:
+        balance:
+          type: number
+          format: double
+          description: Current rewards balance (computed from ledger)
+          example: 125.50
+        currency:
+          type: string
+          description: Currency code (always USD for MVP)
+          example: "USD"
+          enum: [USD]
+
+    TransactionResponse:
+      type: object
+      required:
+        - id
+        - type
+        - amount
+        - description
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: Unique transaction identifier
+          example: "tx-001"
+        type:
+          type: string
+          enum: [CASHBACK, REFERRAL_BONUS, WITHDRAWAL, INCOME]
+          description: Transaction type
+          example: "CASHBACK"
+        amount:
+          type: number
+          format: double
+          description: Transaction amount (positive for credits, negative for debits)
+          example: 25.50
+        description:
+          type: string
+          description: Human-readable transaction description
+          example: "Cashback from purchase at Store A"
+        createdAt:
+          type: string
+          format: date-time
+          description: Transaction timestamp
+          example: "2026-01-10T12:30:00Z"
+
+    PaginatedTransactionsResponse:
+      type: object
+      required:
+        - transactions
+        - hasMore
+        - count
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionResponse'
+          description: List of transactions (ordered by most recent first)
+        nextCursor:
+          type: string
+          nullable: true
+          description: Cursor for next page (null if no more pages)
+          example: "tx-050"
+        hasMore:
+          type: boolean
+          description: Whether there are more transactions available
+          example: true
+        count:
+          type: integer
+          description: Number of transactions in this page
+          example: 50
+
+    CreateIncomeRequest:
+      type: object
+      required:
+        - amount
+        - description
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Amount to add (must be positive)
+          example: 100.00
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Description/reason for income
+          example: "Manual test top-up"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://api.rewards.com/problems/validation-error"
+        title:
+          type: string
+          description: Short human-readable summary
+          example: "Validation Error"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: "Amount must be greater than 0"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying this specific occurrence
+          example: "/rewards/income"
+
+  responses:
+    ValidationError:
+      description: Validation error - invalid request parameters
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/validation-error"
+            title: "Validation Error"
+            status: 400
+            detail: "One or more validation errors occurred"
+            instance: "/rewards/transactions"
+            errors:
+              - "limit must be between 1 and 100"
+
+    UnauthorizedError:
+      description: Unauthorized - missing or invalid identity header
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Missing x-user-id header in production environment"
+            instance: "/rewards/summary"
+
+    InternalServerError:
+      description: Internal server error - unexpected system failure
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: "https://api.rewards.com/problems/internal-server-error"
+            title: "Internal Server Error"
+            status: 500
+            detail: "An unexpected error occurred"
+            instance: "/rewards/summary"
+
+  securitySchemes:
+    UserIdHeader:
+      type: apiKey
+      in: header
+      name: x-user-id
+      description: Development/test identity mechanism (disabled in production)

@@ -4,13 +4,12 @@ A technical challenge to build a **Rewards/Cashback application** using [GitHub 
 
 ## What's Already Configured
 
-The project constitution has been set up at `.specify/memory/constitution.md` with the following core principles:
+The project constitution has been set up at `.specify/memory/constitution.md` (v2.0.0) with the following core principles:
 
-1. **React-First Frontend** - React is required for the frontend
-2. **API-Driven Backend** - RESTful API with proper validations
-3. **Flexible Persistence** - Choose your database (PostgreSQL, SQLite, MongoDB, or JSON)
-4. **Pragmatic Testing** - Tests are required but not strict TDD
-5. **SOLID & Clean Code** - Follow SOLID principles and clean code practices
+1. **Production-Grade Engineering** - Clean code, SOLID principles, maintainable by new developers
+2. **React Frontend Architecture** - Feature-based architecture, custom components, WCAG 2.1 AA compliance
+3. **NestJS Backend Architecture** - Hexagonal architecture, Prisma ORM, PostgreSQL database
+4. **Mandatory Testing Discipline** - 85%+ coverage for services, integration tests, e2e tests
 
 ## The Challenge
 
@@ -66,25 +65,37 @@ Validate consistency across all artifacts.
 
 ## Technology Stack
 
-### Required
-- **Frontend**: React (v17+)
+### Frontend (Mandatory)
+- **Framework**: React 19.2.0
+- **Build Tool**: Vite 7.2.4
+- **Language**: TypeScript 5.9.3
+- **Compiler**: SWC
+- **Linting**: ESLint
 
-### Your Choice
-- **Backend**: Node.js/Express, Python/FastAPI, Go, or any other
-- **Database**: PostgreSQL, SQLite, MongoDB, or JSON file storage
-- **State Management**: React Context, Redux, Zustand, or useState
-- **Styling**: CSS Modules, Tailwind, Styled Components, or plain CSS
+### Backend (Mandatory)
+- **Framework**: NestJS 11.0.1
+- **Language**: TypeScript 5.7.3
+- **Database**: PostgreSQL
+- **ORM**: Prisma
+- **Testing**: Jest 29.7.0
+- **API Documentation**: Swagger (via NestJS decorators)
+
+### Architectural Requirements
+- **Frontend**: Feature-based architecture (max 3 levels nesting per feature)
+- **Backend**: Hexagonal (ports and adapters) architecture
+- **No UI component libraries** (e.g., MUI, Ant Design) - build custom components
+- **Accessibility**: WCAG 2.1 AA compliance mandatory
 
 ## Evaluation Criteria
 
-- Fidelity to the Figma design
-- Code quality (cleanliness, patterns, cohesion, modularity)
-- Correct use of Spec-Kit for both frontend and backend
-- Completeness of the functional flow
-- Project structure and folder organization
-- UX details (feedback, loaders, micro-interactions)
-- SOLID principles and clean code practices
-- Test coverage for critical functionality
+- **Design Fidelity**: Match the Figma design with responsive breakpoints
+- **Code Quality**: Cleanliness, SOLID principles, cohesion, modularity, readability
+- **Architecture**: Feature-based frontend, hexagonal backend, clear separation of concerns
+- **Testing**: 85%+ unit test coverage for services, integration tests, e2e tests
+- **API Documentation**: Complete Swagger documentation on all endpoints
+- **UX Excellence**: Loading states, error handling, micro-interactions, WCAG 2.1 AA compliance
+- **Spec-Kit Usage**: Complete artifacts (spec.md, plan.md, tasks.md) for both frontend and backend
+- **Project Structure**: Feature-based frontend, proper NestJS module organization
 
 ## Deliverables
 

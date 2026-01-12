@@ -14,11 +14,11 @@ describe('RewardsService', () => {
     jest.clearAllMocks();
   });
 
-  it('calculateBalance returns sum of credits minus debits', async () => {
+  it('calculateBalance returns sum of credits plus negative debits', async () => {
     // credits aggregate
     prismaMock.rewardTransaction.aggregate.mockImplementationOnce(async () => ({ _sum: { amount: { toString: () => '300.00' } } }));
     // debits aggregate
-    prismaMock.rewardTransaction.aggregate.mockImplementationOnce(async () => ({ _sum: { amount: { toString: () => '120.50' } } }));
+    prismaMock.rewardTransaction.aggregate.mockImplementationOnce(async () => ({ _sum: { amount: { toString: () => '-120.50' } } }));
 
     const result = await service.calculateBalance('user-1');
 

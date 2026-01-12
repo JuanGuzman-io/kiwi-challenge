@@ -33,4 +33,15 @@ describe('BankAccountsService', () => {
     expect(res.count).toBe(0);
     expect(res.accounts).toEqual([]);
   });
+
+  it('queries active accounts by user id ordered by createdAt desc', async () => {
+    prismaMock.bankAccount.findMany.mockResolvedValue([]);
+
+    await service.findAllByUserId('user-99');
+
+    expect(prismaMock.bankAccount.findMany).toHaveBeenCalledWith({
+      where: { userId: 'user-99', isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  });
 });

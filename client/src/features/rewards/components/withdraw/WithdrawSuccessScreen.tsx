@@ -36,28 +36,30 @@ export function WithdrawSuccessScreen() {
 
   return (
     <div className="withdraw-success-screen">
-      <div className="success-visual">
-        {imageFailed ? (
-          <div className="success-fallback" aria-hidden="true">
-            ✓
-          </div>
-        ) : (
-          <img
-            src={successCheck}
-            alt="Retiro exitoso"
-            className="success-image"
-            onError={() => setImageFailed(true)}
-          />
-        )}
-      </div>
+      <div className="success-body">
+        <div className="success-visual">
+          {imageFailed ? (
+            <div className="success-fallback" aria-hidden="true">
+              ✓
+            </div>
+          ) : (
+            <img
+              src={successCheck}
+              alt="Retiro exitoso"
+              className="success-image"
+              onError={() => setImageFailed(true)}
+            />
+          )}
+        </div>
 
-      <h1 ref={titleRef} tabIndex={-1} className="success-title">
-        ¡Tu retiro fue exitoso!
-      </h1>
-      <p className="success-description">
-        Procesamos tu solicitud y enviamos tu recompensa a tu cuenta bancaria
-        terminada en {withdrawalData.lastFourDigits}.
-      </p>
+        <h1 ref={titleRef} tabIndex={-1} className="success-title">
+          ¡Tu retiro fue exitoso!
+        </h1>
+        <p className="success-description">
+          Procesamos tu solicitud y enviamos tu recompensa a tu cuenta bancaria
+          terminada en {withdrawalData.lastFourDigits}.
+        </p>
+      </div>
 
       <WithdrawFooter>
         <button

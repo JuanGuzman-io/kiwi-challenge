@@ -10,6 +10,17 @@
   align-items: center;
   background: #ffffff;
   animation: withdraw-fade 180ms ease-out;
+  justify-content: flex-start;
+}
+
+.success-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+  width: 100%;
 }
 
 .success-visual {
@@ -18,7 +29,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 8px;
 }
 
 .success-image {
@@ -80,6 +90,10 @@
 
 .withdraw-success-screen--skeleton {
   gap: 20px;
+}
+
+.withdraw-success-screen .withdraw-footer {
+  margin-top: 0;
 }
 
 .withdraw-success-screen--skeleton .skeleton {

@@ -133,7 +133,18 @@ export function WithdrawScreen() {
       return ERROR_MESSAGES.NETWORK_ERROR;
     }
 
-    if ('status' in submitError) {
+    const isProblemDetails = (
+      error: unknown
+    ): error is { status: number; detail?: unknown } => {
+      return (
+        typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        typeof (error as { status: unknown }).status === 'number'
+      );
+    };
+
+    if (isProblemDetails(submitError)) {
       if (submitError.status === 404) {
         return ERROR_MESSAGES.BANK_ACCOUNT_NOT_FOUND;
       }
@@ -142,7 +153,10 @@ export function WithdrawScreen() {
         return submitError.detail.join(', ');
       }
 
-      if (typeof submitError.detail === 'string' && submitError.detail.length > 0) {
+      if (
+        typeof submitError.detail === 'string' &&
+        submitError.detail.length > 0
+      ) {
         return submitError.detail;
       }
     }

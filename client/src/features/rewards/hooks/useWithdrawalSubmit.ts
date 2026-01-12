@@ -46,20 +46,24 @@ export function useWithdrawalSubmit(): UseWithdrawalSubmitReturn {
 
   const submitWithdrawal = useCallback(
     async (request: WithdrawalRequest): Promise<WithdrawalResponse> => {
+      if (isSubmitting) {
+        return Promise.reject(new Error('Submission in progress'));
+      }
+
       setIsSubmitting(true);
       setError(null);
 
       try {
         const response = await apiSubmitWithdrawal(request);
-        setIsSubmitting(false);
         return response;
       } catch (err) {
         setError(err as ProblemDetails | Error);
-        setIsSubmitting(false);
         throw err; // Re-throw so caller can handle (e.g., navigation)
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    []
+    [isSubmitting]
   );
 
   const clearError = useCallback(() => {

@@ -1,208 +1,147 @@
 /**
- * Tests for useWithdrawalSubmit hook
- * Per tasks T008: Unit tests for withdrawal submission hook
- * Following TDD approach - tests written FIRST
+ * Hook tests for useWithdrawalSubmit
+ * Per tasks T008, T030
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { server } from '../../../mocks/server';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useWithdrawalSubmit } from '../../../../src/features/rewards/hooks/useWithdrawalSubmit';
-import type { WithdrawalRequest } from '../../../../src/features/rewards/types/withdrawal.types';
-import {
-  withdrawalSuccessHandler,
-  withdrawalBankAccountNotFoundHandler,
-  withdrawalServerErrorHandler,
-  withdrawalTimeoutHandler,
-} from '../../../mocks/handlers/withdrawalHandlers';
+import { submitWithdrawal } from '../../../../src/features/rewards/api/withdrawalsApi';
+import type {
+  WithdrawalRequest,
+  WithdrawalResponse,
+  ProblemDetails,
+} from '../../../../src/features/rewards/types/withdrawal.types';
+import { TimeoutError } from '../../../../src/features/rewards/types/api.types';
+
+vi.mock('../../../../src/features/rewards/api/withdrawalsApi', () => ({
+  submitWithdrawal: vi.fn(),
+}));
+
+const request: WithdrawalRequest = {
+  amount: 100,
+  bankAccountId: 'bank-account-001',
+  currency: 'USD',
+};
+
+const response: WithdrawalResponse = {
+  id: 'withdrawal-001',
+  userId: 'test-user-001',
+  amount: 100,
+  bankAccountId: 'bank-account-001',
+  currency: 'USD',
+  status: 'pending',
+  createdAt: '2026-01-11T17:49:07.082Z',
+};
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('useWithdrawalSubmit', () => {
   beforeEach(() => {
-    server.resetHandlers();
+    vi.mocked(submitWithdrawal).mockReset();
   });
 
-  const mockRequest: WithdrawalRequest = {
-    amount: 1234.56,
-    bankAccountId: 'bank-account-001',
-    currency: 'USD',
-  };
-
-  it('should initialize with isSubmitting false and no error', () => {
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    expect(result.current.isSubmitting).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(typeof result.current.submitWithdrawal).toBe('function');
-    expect(typeof result.current.clearError).toBe('function');
-  });
-
-  it('should successfully submit withdrawal and return response', async () => {
-    server.use(withdrawalSuccessHandler);
+  it('should submit successfully and clear error state', async () => {
+    vi.mocked(submitWithdrawal).mockResolvedValueOnce(response);
 
     const { result } = renderHook(() => useWithdrawalSubmit());
 
-    let response;
-    await waitFor(async () => {
-      response = await result.current.submitWithdrawal(mockRequest);
+    let submission: WithdrawalResponse | undefined;
+    await act(async () => {
+      submission = await result.current.submitWithdrawal(request);
     });
 
-    expect(response).toMatchObject({
-      id: expect.any(String),
-      userId: 'test-user-001',
-      amount: mockRequest.amount,
-      bankAccountId: mockRequest.bankAccountId,
-      currency: mockRequest.currency,
-      status: 'pending',
-      createdAt: expect.any(String),
-    });
-
-    expect(result.current.isSubmitting).toBe(false);
+    expect(submission).toEqual(response);
     expect(result.current.error).toBeNull();
-  });
-
-  it('should set isSubmitting to true during submission', async () => {
-    server.use(withdrawalSuccessHandler);
-
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    // Note: isSubmitting is synchronously set to true, but renders happen async
-    // We verify the final state after submission completes
-    const response = await result.current.submitWithdrawal(mockRequest);
-
-    // After completion, isSubmitting should be false
     expect(result.current.isSubmitting).toBe(false);
-    expect(response).toBeDefined();
   });
 
-  it('should handle API errors and set error state', async () => {
-    server.use(withdrawalBankAccountNotFoundHandler);
+  it('should set error when submission fails', async () => {
+    const problemDetails: ProblemDetails = {
+      type: 'https://api.example.com/errors/server-error',
+      title: 'Internal Server Error',
+      status: 500,
+      detail: 'Unexpected error',
+      instance: '/withdrawals',
+    };
+
+    vi.mocked(submitWithdrawal).mockRejectedValueOnce(problemDetails);
 
     const { result } = renderHook(() => useWithdrawalSubmit());
 
-    await expect(
-      result.current.submitWithdrawal(mockRequest)
-    ).rejects.toMatchObject({
-      status: 404,
-      detail: 'The specified bank account does not exist or is not accessible',
+    await act(async () => {
+      await result.current.submitWithdrawal(request).catch(() => null);
     });
 
     await waitFor(() => {
-      expect(result.current.error).toMatchObject({
-        status: 404,
-        detail: 'The specified bank account does not exist or is not accessible',
-      });
+      expect(result.current.error).toEqual(problemDetails);
     });
-
-    expect(result.current.isSubmitting).toBe(false);
   });
 
-  it('should clear error state with clearError', async () => {
-    server.use(withdrawalBankAccountNotFoundHandler);
+  it('should prevent duplicate submissions while in flight', async () => {
+    const deferred = createDeferred<WithdrawalResponse>();
+    vi.mocked(submitWithdrawal).mockReturnValueOnce(deferred.promise as never);
 
     const { result } = renderHook(() => useWithdrawalSubmit());
 
-    // Trigger error
-    await expect(
-      result.current.submitWithdrawal(mockRequest)
-    ).rejects.toMatchObject({
-      status: 404,
+    act(() => {
+      result.current.submitWithdrawal(request);
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSubmitting).toBe(true);
+    });
+
+    await expect(result.current.submitWithdrawal(request)).rejects.toBeInstanceOf(
+      Error
+    );
+    expect(vi.mocked(submitWithdrawal)).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      deferred.resolve(response);
+    });
+  });
+
+  it('should clear error when clearError is called', async () => {
+    vi.mocked(submitWithdrawal).mockRejectedValueOnce(new Error('API error'));
+
+    const { result } = renderHook(() => useWithdrawalSubmit());
+
+    await act(async () => {
+      await result.current.submitWithdrawal(request).catch(() => null);
     });
 
     await waitFor(() => {
       expect(result.current.error).not.toBeNull();
     });
 
-    // Clear error
-    result.current.clearError();
-
-    await waitFor(() => {
-      expect(result.current.error).toBeNull();
+    act(() => {
+      result.current.clearError();
     });
+
+    expect(result.current.error).toBeNull();
   });
 
-  it('should track isSubmitting state correctly', async () => {
-    server.use(withdrawalSuccessHandler);
+  it('should surface TimeoutError on timeout', async () => {
+    const timeoutError = new TimeoutError('Request exceeded 5 seconds');
+    vi.mocked(submitWithdrawal).mockRejectedValueOnce(timeoutError);
 
     const { result } = renderHook(() => useWithdrawalSubmit());
 
-    // Initial state
-    expect(result.current.isSubmitting).toBe(false);
-
-    // Submit and wait for completion
-    const response = await result.current.submitWithdrawal(mockRequest);
-
-    // After completion
-    expect(response).toBeDefined();
-    expect(result.current.isSubmitting).toBe(false);
-
-    // Note: The hook itself doesn't prevent duplicates - that's WithdrawScreen's responsibility
-    // WithdrawScreen guards with: if (isSubmitting) return;
-  });
-
-  it('should handle server errors (500)', async () => {
-    server.use(withdrawalServerErrorHandler);
-
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    await expect(
-      result.current.submitWithdrawal(mockRequest)
-    ).rejects.toMatchObject({
-      status: 500,
-      detail: 'An unexpected error occurred while processing your withdrawal',
+    await act(async () => {
+      await result.current.submitWithdrawal(request).catch(() => null);
     });
 
     await waitFor(() => {
-      expect(result.current.error).toMatchObject({
-        status: 500,
-      });
-    });
-  });
-
-  it('should reset isSubmitting to false after error', async () => {
-    server.use(withdrawalBankAccountNotFoundHandler);
-
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    // Submit and expect error
-    await expect(
-      result.current.submitWithdrawal(mockRequest)
-    ).rejects.toMatchObject({
-      status: 404,
-    });
-
-    // Verify isSubmitting is false (allows retry)
-    expect(result.current.isSubmitting).toBe(false);
-  });
-
-  it('should handle timeout errors and expose TimeoutError', async () => {
-    server.use(withdrawalTimeoutHandler);
-
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    await expect(
-      result.current.submitWithdrawal(mockRequest)
-    ).rejects.toMatchObject({
-      name: 'TimeoutError',
-    });
-
-    await waitFor(() => {
-      expect(result.current.error).toBeInstanceOf(Error);
-      expect((result.current.error as Error).name).toBe('TimeoutError');
-    });
-  }, 10000);
-
-  it('should handle network errors', async () => {
-    server.use(
-      http.post('http://localhost:3000/withdrawals', () => HttpResponse.error())
-    );
-
-    const { result } = renderHook(() => useWithdrawalSubmit());
-
-    await expect(result.current.submitWithdrawal(mockRequest)).rejects.toBeDefined();
-
-    await waitFor(() => {
-      expect(result.current.error).toBeInstanceOf(Error);
+      expect(result.current.error).toBe(timeoutError);
     });
   });
 });

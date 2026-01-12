@@ -1,144 +1,91 @@
 /**
- * Tests for useRewardsSummary hook
- * Per tasks T033-T037: Write tests FIRST before implementation (TDD)
+ * Hook tests for useRewardsSummary
+ * Per tasks T033-T037: Validate loading, error, timeout, and refetch behaviors
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { server } from '../../mocks/server';
-import { http, HttpResponse } from 'msw';
-
-// Mock hook import - will be implemented later
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useRewardsSummary } from '../../../src/features/rewards/hooks/useRewardsSummary';
+import { getSummary } from '../../../src/features/rewards/api/rewardsApi';
+import { TimeoutError } from '../../../src/features/rewards/types/api.types';
+import type { RewardsSummary } from '../../../src/features/rewards/types/rewards.types';
+
+vi.mock('../../../src/features/rewards/api/rewardsApi', () => ({
+  getSummary: vi.fn(),
+}));
+
+const mockSummary: RewardsSummary = {
+  balance: 123.45,
+  currency: 'USD',
+};
 
 describe('useRewardsSummary', () => {
   beforeEach(() => {
-    // Reset handlers before each test
-    server.resetHandlers();
+    vi.mocked(getSummary).mockReset();
   });
 
-  // T034: Successful balance fetch returns data and loading=false
-  it('should successfully fetch balance and set loading to false', async () => {
+  it('should return data and loading=false on successful fetch', async () => {
+    vi.mocked(getSummary).mockResolvedValueOnce(mockSummary);
+
     const { result } = renderHook(() => useRewardsSummary());
 
-    // Initially loading
-    expect(result.current.loading).toBe(true);
-    expect(result.current.data).toBeNull();
-    expect(result.current.error).toBeNull();
-
-    // Wait for data to load
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Data should be loaded
-    expect(result.current.data).toEqual({
-      balance: 1234.56,
-      currency: 'USD',
-    });
+    expect(result.current.data).toEqual(mockSummary);
     expect(result.current.error).toBeNull();
   });
 
-  // T035: API error sets error state and loading=false
-  it('should handle API errors and set error state', async () => {
-    // Override handler to return error
-    server.use(
-      http.get('/rewards/summary', () => {
-        return HttpResponse.json(
-          {
-            type: 'https://api.example.com/problems/internal-error',
-            title: 'Internal Server Error',
-            status: 500,
-            detail: 'An unexpected error occurred',
-          },
-          { status: 500 }
-        );
-      })
-    );
+  it('should set error state and loading=false on API error', async () => {
+    const apiError = new Error('API failure');
+    vi.mocked(getSummary).mockRejectedValueOnce(apiError);
 
     const { result } = renderHook(() => useRewardsSummary());
 
-    // Wait for error
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Error should be set
+    expect(result.current.error).toBe(apiError);
     expect(result.current.data).toBeNull();
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.name).toBe('APIError');
   });
 
-  // T036: 5-second timeout triggers TimeoutError
-  it('should timeout after 5 seconds and trigger TimeoutError', async () => {
-    // Override handler to delay response beyond 5 seconds
-    server.use(
-      http.get('/rewards/summary', async () => {
-        await new Promise((resolve) => setTimeout(resolve, 6000));
-        return HttpResponse.json({ balance: 0, currency: 'USD' });
-      })
-    );
+  it('should surface TimeoutError on request timeout', async () => {
+    const timeoutError = new TimeoutError('Request exceeded 5 seconds');
+    vi.mocked(getSummary).mockRejectedValueOnce(timeoutError);
 
     const { result } = renderHook(() => useRewardsSummary());
 
-    // Wait for timeout error
-    await waitFor(
-      () => {
-        expect(result.current.loading).toBe(false);
-      },
-      { timeout: 7000 }
-    );
-
-    // TimeoutError should be set
-    expect(result.current.data).toBeNull();
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.name).toBe('TimeoutError');
-  }, 10000); // Increase test timeout to 10 seconds
-
-  // T037: refetch clears error and re-fetches data
-  it('should clear error and re-fetch data on refetch', async () => {
-    // First, cause an error
-    server.use(
-      http.get('/rewards/summary', () => {
-        return HttpResponse.json(
-          {
-            type: 'https://api.example.com/problems/internal-error',
-            title: 'Internal Server Error',
-            status: 500,
-          },
-          { status: 500 }
-        );
-      })
-    );
-
-    const { result } = renderHook(() => useRewardsSummary());
-
-    // Wait for error
-    await waitFor(() => {
-      expect(result.current.error).not.toBeNull();
-    });
-
-    // Reset handler to return success
-    server.resetHandlers();
-
-    // Call refetch
-    result.current.refetch();
-
-    // Should start loading again
-    await waitFor(() => {
-      expect(result.current.loading).toBe(true);
-    });
-
-    // Wait for successful data
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Data should be loaded, error cleared
-    expect(result.current.data).toEqual({
-      balance: 1234.56,
-      currency: 'USD',
+    expect(result.current.error).toBe(timeoutError);
+  });
+
+  it('should refetch and clear error state', async () => {
+    const apiError = new Error('API failure');
+    vi.mocked(getSummary)
+      .mockRejectedValueOnce(apiError)
+      .mockResolvedValueOnce(mockSummary);
+
+    const { result } = renderHook(() => useRewardsSummary());
+
+    await waitFor(() => {
+      expect(result.current.error).toBe(apiError);
     });
+
+    await act(async () => {
+      result.current.refetch();
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
     expect(result.current.error).toBeNull();
+    expect(result.current.data).toEqual(mockSummary);
+    expect(vi.mocked(getSummary)).toHaveBeenCalledTimes(2);
   });
 });

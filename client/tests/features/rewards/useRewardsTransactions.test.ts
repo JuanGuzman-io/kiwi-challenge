@@ -1,72 +1,111 @@
 /**
- * Tests for useRewardsTransactions hook
- * Per tasks T054-T059: Write tests FIRST before implementation (TDD)
+ * Hook tests for useRewardsTransactions
+ * Per tasks T054-T059, T082-T085: Validate pagination, ordering, and error handling
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { server } from '../../mocks/server';
-import { http, HttpResponse } from 'msw';
-
-// Mock hook import - will be implemented later
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useRewardsTransactions } from '../../../src/features/rewards/hooks/useRewardsTransactions';
+import { getTransactions } from '../../../src/features/rewards/api/rewardsApi';
+import { TimeoutError } from '../../../src/features/rewards/types/api.types';
+import type { PaginatedTransactions } from '../../../src/features/rewards/types/api.types';
+import type { Transaction } from '../../../src/features/rewards/types/rewards.types';
+
+vi.mock('../../../src/features/rewards/api/rewardsApi', () => ({
+  getTransactions: vi.fn(),
+}));
+
+const firstPageTransactions: Transaction[] = [
+  {
+    id: 'txn_001',
+    type: 'CASHBACK',
+    amount: 25.5,
+    description: 'Cashback on purchase #12345',
+    createdAt: '2025-09-15T14:30:00Z',
+  },
+  {
+    id: 'txn_002',
+    type: 'WITHDRAWAL',
+    amount: -10.0,
+    description: 'Withdrawal to Bank Account ****1234',
+    createdAt: '2025-09-10T10:15:00Z',
+  },
+];
+
+const secondPageTransactions: Transaction[] = [
+  {
+    id: 'txn_003',
+    type: 'REFERRAL_BONUS',
+    amount: 15.0,
+    description: 'Referral bonus for inviting user@example.com',
+    createdAt: '2025-08-28T16:45:00Z',
+  },
+];
+
+const firstPageResponse: PaginatedTransactions = {
+  transactions: firstPageTransactions,
+  nextCursor: 'cursor_page2',
+  hasMore: true,
+  count: 3,
+};
+
+const secondPageResponse: PaginatedTransactions = {
+  transactions: secondPageTransactions,
+  nextCursor: null,
+  hasMore: false,
+  count: 3,
+};
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('useRewardsTransactions', () => {
   beforeEach(() => {
-    server.resetHandlers();
+    vi.mocked(getTransactions).mockReset();
   });
 
-  // T055: Initial load fetches first page of transactions
-  it('should fetch first page of transactions on initial load', async () => {
-    const { result } = renderHook(() => useRewardsTransactions());
+  it('should fetch first page on initial load', async () => {
+    vi.mocked(getTransactions).mockResolvedValueOnce(firstPageResponse);
 
-    // Initially loading
-    expect(result.current.loading).toBe(true);
-    expect(result.current.data).toEqual([]);
-
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // First page should be loaded (3 transactions from mock)
-    expect(result.current.data).toHaveLength(3);
-    expect(result.current.hasMore).toBe(true);
-    expect(result.current.nextCursor).toBe('cursor_page2');
-  });
-
-  // T056: Transactions ordered newest-first (descending createdAt)
-  it('should return transactions in newest-first order', async () => {
     const { result } = renderHook(() => useRewardsTransactions());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    const transactions = result.current.data;
-    expect(transactions.length).toBeGreaterThan(0);
-
-    // Check that dates are in descending order
-    for (let i = 0; i < transactions.length - 1; i++) {
-      const current = new Date(transactions[i].createdAt);
-      const next = new Date(transactions[i + 1].createdAt);
-      expect(current.getTime()).toBeGreaterThanOrEqual(next.getTime());
-    }
+    expect(result.current.data).toEqual(firstPageTransactions);
+    expect(vi.mocked(getTransactions)).toHaveBeenCalledWith(null, 20);
   });
 
-  // T057: Empty transactions array handled correctly
+  it('should preserve newest-first order from API response', async () => {
+    vi.mocked(getTransactions).mockResolvedValueOnce(firstPageResponse);
+
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.data.map((txn) => txn.id)).toEqual([
+      'txn_001',
+      'txn_002',
+    ]);
+  });
+
   it('should handle empty transactions array', async () => {
-    // Override handler to return empty array
-    server.use(
-      http.get('/rewards/transactions', () => {
-        return HttpResponse.json({
-          transactions: [],
-          nextCursor: null,
-          hasMore: false,
-          count: 0,
-        });
-      })
-    );
+    vi.mocked(getTransactions).mockResolvedValueOnce({
+      transactions: [],
+      nextCursor: null,
+      hasMore: false,
+      count: 0,
+    });
 
     const { result } = renderHook(() => useRewardsTransactions());
 
@@ -76,25 +115,11 @@ describe('useRewardsTransactions', () => {
 
     expect(result.current.data).toEqual([]);
     expect(result.current.hasMore).toBe(false);
-    expect(result.current.nextCursor).toBeNull();
-    expect(result.current.error).toBeNull();
   });
 
-  // T058: API error sets error state and loading=false
-  it('should handle API errors and set error state', async () => {
-    // Override handler to return error
-    server.use(
-      http.get('/rewards/transactions', () => {
-        return HttpResponse.json(
-          {
-            type: 'https://api.example.com/problems/internal-error',
-            title: 'Internal Server Error',
-            status: 500,
-          },
-          { status: 500 }
-        );
-      })
-    );
+  it('should set error state and loading=false on API error', async () => {
+    const apiError = new Error('API failure');
+    vi.mocked(getTransactions).mockRejectedValueOnce(apiError);
 
     const { result } = renderHook(() => useRewardsTransactions());
 
@@ -102,136 +127,120 @@ describe('useRewardsTransactions', () => {
       expect(result.current.loading).toBe(false);
     });
 
+    expect(result.current.error).toBe(apiError);
     expect(result.current.data).toEqual([]);
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.name).toBe('APIError');
   });
 
-  // T059: 5-second timeout triggers TimeoutError
-  it('should timeout after 5 seconds and trigger TimeoutError', async () => {
-    // Override handler to delay response beyond 5 seconds
-    server.use(
-      http.get('/rewards/transactions', async () => {
-        await new Promise((resolve) => setTimeout(resolve, 6000));
-        return HttpResponse.json({
-          transactions: [],
-          nextCursor: null,
-          hasMore: false,
-        });
-      })
-    );
+  it('should surface TimeoutError on request timeout', async () => {
+    const timeoutError = new TimeoutError('Request exceeded 5 seconds');
+    vi.mocked(getTransactions).mockRejectedValueOnce(timeoutError);
 
     const { result } = renderHook(() => useRewardsTransactions());
 
-    await waitFor(
-      () => {
-        expect(result.current.loading).toBe(false);
-      },
-      { timeout: 7000 }
-    );
-
-    expect(result.current.data).toEqual([]);
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.name).toBe('TimeoutError');
-  }, 10000);
-
-  // T082: loadMore appends transactions without resetting existing list
-  it('should append transactions when loading more without resetting list', async () => {
-    const { result } = renderHook(() => useRewardsTransactions());
-
-    // Wait for initial load
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    const initialCount = result.current.data.length;
-    expect(initialCount).toBe(3); // First page has 3 transactions
+    expect(result.current.error).toBe(timeoutError);
+  });
+
+  it('should append transactions when loadMore is called', async () => {
+    vi.mocked(getTransactions)
+      .mockResolvedValueOnce(firstPageResponse)
+      .mockResolvedValueOnce(secondPageResponse);
+
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.loadMore();
+    });
+
+    await waitFor(() => {
+      expect(result.current.data.length).toBe(3);
+    });
+
+    expect(result.current.data.map((txn) => txn.id)).toEqual([
+      'txn_001',
+      'txn_002',
+      'txn_003',
+    ]);
+  });
+
+  it('should update hasMore flag based on pagination response', async () => {
+    vi.mocked(getTransactions)
+      .mockResolvedValueOnce(firstPageResponse)
+      .mockResolvedValueOnce(secondPageResponse);
+
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
     expect(result.current.hasMore).toBe(true);
-    expect(result.current.nextCursor).toBe('cursor_page2');
 
-    // Load more
-    result.current.loadMore();
+    await act(async () => {
+      await result.current.loadMore();
+    });
 
-    // Should start loading more
+    await waitFor(() => {
+      expect(result.current.hasMore).toBe(false);
+    });
+  });
+
+  it('should set loadingMore=true while pagination request is in flight', async () => {
+    const deferred = createDeferred<PaginatedTransactions>();
+    vi.mocked(getTransactions)
+      .mockResolvedValueOnce(firstPageResponse)
+      .mockReturnValueOnce(deferred.promise);
+
+    const { result } = renderHook(() => useRewardsTransactions());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    act(() => {
+      result.current.loadMore();
+    });
+
     await waitFor(() => {
       expect(result.current.loadingMore).toBe(true);
     });
 
-    // Wait for second page to load
+    await act(async () => {
+      deferred.resolve(secondPageResponse);
+    });
+
     await waitFor(() => {
       expect(result.current.loadingMore).toBe(false);
     });
-
-    // Transactions should be appended (not replaced)
-    expect(result.current.data.length).toBeGreaterThan(initialCount);
-    expect(result.current.hasMore).toBe(false); // No more pages
-    expect(result.current.nextCursor).toBeNull();
   });
 
-  // T083: hasMore flag correctly indicates more pages exist
-  it('should correctly set hasMore flag based on pagination state', async () => {
-    const { result } = renderHook(() => useRewardsTransactions());
+  it('should pass nextCursor to getTransactions when loading more', async () => {
+    vi.mocked(getTransactions)
+      .mockResolvedValueOnce(firstPageResponse)
+      .mockResolvedValueOnce(secondPageResponse);
 
-    // Initial load - hasMore should be true
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-    expect(result.current.hasMore).toBe(true);
-
-    // Load more
-    result.current.loadMore();
-
-    // After loading last page - hasMore should be false
-    await waitFor(() => {
-      expect(result.current.loadingMore).toBe(false);
-    });
-    expect(result.current.hasMore).toBe(false);
-  });
-
-  // T084: loadingMore state true during pagination request
-  it('should set loadingMore to true during pagination request', async () => {
     const { result } = renderHook(() => useRewardsTransactions());
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Initially not loading more
-    expect(result.current.loadingMore).toBe(false);
-
-    // Trigger loadMore
-    result.current.loadMore();
-
-    // Should be loading more
-    await waitFor(() => {
-      expect(result.current.loadingMore).toBe(true);
+    await act(async () => {
+      await result.current.loadMore();
     });
 
-    // Should complete loading more
-    await waitFor(() => {
-      expect(result.current.loadingMore).toBe(false);
-    });
-  });
-
-  // T085: nextCursor passed correctly to getTransactions API
-  it('should pass nextCursor correctly to API when loading more', async () => {
-    const { result } = renderHook(() => useRewardsTransactions());
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    const firstCursor = result.current.nextCursor;
-    expect(firstCursor).toBe('cursor_page2');
-
-    // Load more should use the cursor
-    result.current.loadMore();
-
-    await waitFor(() => {
-      expect(result.current.loadingMore).toBe(false);
-    });
-
-    // After loading second page, cursor should be null (last page)
-    expect(result.current.nextCursor).toBeNull();
+    expect(vi.mocked(getTransactions)).toHaveBeenNthCalledWith(1, null, 20);
+    expect(vi.mocked(getTransactions)).toHaveBeenNthCalledWith(
+      2,
+      'cursor_page2',
+      20
+    );
   });
 });

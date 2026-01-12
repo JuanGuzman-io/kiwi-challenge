@@ -5,26 +5,34 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { axe } from 'jest-axe';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import { axe, toHaveNoViolations } from 'jest-axe';
+import '@testing-library/jest-dom';
 import { server } from '../../mocks/server';
 import { http, HttpResponse } from 'msw';
 import { BalanceSummaryCard } from '../../../src/features/rewards/components/BalanceSummaryCard';
 
-// Helper to render with Router
-function renderWithRouter(component: React.ReactElement) {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
-}
+const mockNavigate = vi.fn();
+
+expect.extend(toHaveNoViolations);
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 describe('BalanceSummaryCard', () => {
   beforeEach(() => {
     server.resetHandlers();
+    mockNavigate.mockClear();
   });
 
   // T049: Balance displays with correct currency formatting
   it('should display balance with correct currency formatting', async () => {
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Wait for data to load
     await waitFor(() => {
@@ -37,7 +45,7 @@ describe('BalanceSummaryCard', () => {
 
   // T050: Loading state shows skeleton placeholder
   it('should show skeleton placeholder while loading', () => {
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Loading state should be present initially
     expect(screen.getByRole('status', { name: /cargando balance/i })).toBeInTheDocument();
@@ -59,7 +67,7 @@ describe('BalanceSummaryCard', () => {
       })
     );
 
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Wait for error state
     await waitFor(() => {
@@ -83,7 +91,7 @@ describe('BalanceSummaryCard', () => {
       })
     );
 
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Wait for data to load
     await waitFor(() => {
@@ -100,21 +108,20 @@ describe('BalanceSummaryCard', () => {
 
   // T053: jest-axe finds no violations in BalanceSummaryCard
   it('should have no accessibility violations', async () => {
-    const { container } = renderWithRouter(<BalanceSummaryCard />);
+    const { container } = render(<BalanceSummaryCard />);
 
     // Wait for component to load
     await waitFor(() => {
       expect(screen.getByText('Monto acumulado')).toBeInTheDocument();
     });
 
-    // Run accessibility tests
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   // T097: "Retirar" button navigates to /withdraw when clicked
   it('should navigate to /withdraw when "Retirar" button is clicked', async () => {
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Wait for data to load
     await waitFor(() => {
@@ -124,13 +131,12 @@ describe('BalanceSummaryCard', () => {
     const button = screen.getByRole('button', { name: /Retirar fondos/i });
     expect(button).not.toBeDisabled();
 
-    // Click the button
-    button.click();
+    await act(async () => {
+      button.click();
+    });
 
     // Check that we navigated to /withdraw
-    await waitFor(() => {
-      expect(window.location.pathname).toBe('/withdraw');
-    });
+    expect(mockNavigate).toHaveBeenCalledWith('/withdraw');
   });
 
   // T098: "Retirar" button disabled when balance is zero
@@ -144,7 +150,7 @@ describe('BalanceSummaryCard', () => {
       })
     );
 
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     await waitFor(() => {
       expect(screen.getByText('Monto acumulado')).toBeInTheDocument();
@@ -157,7 +163,7 @@ describe('BalanceSummaryCard', () => {
 
   // T099: "Retirar" button disabled while loading=true
   it('should disable "Retirar" button while loading', () => {
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     // Initially loading
     const loadingElement = screen.getByRole('status', { name: /cargando balance/i });
@@ -169,18 +175,7 @@ describe('BalanceSummaryCard', () => {
 
   // T100: Double-tap on "Retirar" only triggers one navigation
   it('should prevent double-tap on "Retirar" button', async () => {
-    const mockNavigate = vi.fn();
-
-    // Mock the navigate function
-    vi.mock('react-router-dom', async () => {
-      const actual = await vi.importActual('react-router-dom');
-      return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-      };
-    });
-
-    renderWithRouter(<BalanceSummaryCard />);
+    render(<BalanceSummaryCard />);
 
     await waitFor(() => {
       expect(screen.getByText('Monto acumulado')).toBeInTheDocument();
@@ -188,16 +183,11 @@ describe('BalanceSummaryCard', () => {
 
     const button = screen.getByRole('button', { name: /Retirar fondos/i });
 
-    // Click twice rapidly
-    button.click();
-    button.click();
-
-    // Wait a bit
-    await waitFor(() => {
-      expect(button).toBeDisabled();
+    await act(async () => {
+      button.click();
+      button.click();
     });
 
-    // Should only navigate once (or button should be disabled after first click)
-    expect(button).toBeDisabled();
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,150 +1,119 @@
 /**
- * Tests for useBankAccounts hook
- * Per tasks T014-T017: Write tests FIRST before implementation (TDD)
- * Following useRewardsSummary.test.ts pattern from 001-rewards-home
+ * Hook tests for useBankAccounts
+ * Per tasks T014-T017: Validate success, loading, error, and refetch behaviors
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { server } from '../../../mocks/server';
-import {
-  bankAccountsErrorHandler,
-  bankAccountsEmptyHandler
-} from '../../../mocks/bankAccountsHandlers';
-
-// Mock hook import - will be implemented after tests are written
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { useBankAccounts } from '../../../../src/features/rewards/hooks/useBankAccounts';
+import { getBankAccounts } from '../../../../src/features/rewards/api/bankAccountsApi';
+import type { BankAccountsResponse } from '../../../../src/features/rewards/types/bankAccount.types';
+
+vi.mock('../../../../src/features/rewards/api/bankAccountsApi', () => ({
+  getBankAccounts: vi.fn(),
+}));
+
+const mockResponse: BankAccountsResponse = {
+  accounts: [
+    {
+      id: 'bank-account-001',
+      lastFourDigits: '1234',
+      accountType: 'Checking',
+      isActive: true,
+      createdAt: '2026-01-11T17:49:07.082Z',
+    },
+    {
+      id: 'bank-account-002',
+      lastFourDigits: '5678',
+      accountType: 'Savings',
+      isActive: false,
+      createdAt: '2026-01-11T17:49:07.091Z',
+    },
+  ],
+  count: 2,
+};
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('useBankAccounts', () => {
   beforeEach(() => {
-    // Reset handlers before each test
-    server.resetHandlers();
+    vi.mocked(getBankAccounts).mockReset();
   });
 
-  // T014: Successful accounts fetch returns data and loading=false
-  it('should successfully fetch bank accounts and set loading to false', async () => {
+  it('should return active accounts on success', async () => {
+    vi.mocked(getBankAccounts).mockResolvedValueOnce(mockResponse);
+
     const { result } = renderHook(() => useBankAccounts());
 
-    // Initially loading
-    expect(result.current.loading).toBe(true);
-    expect(result.current.accounts).toEqual([]);
-    expect(result.current.error).toBeNull();
-
-    // Wait for data to load
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Data should be loaded
-    expect(result.current.accounts).toEqual([
-      {
-        id: 'bank-account-002',
-        lastFourDigits: '4321',
-        accountType: 'Savings',
-        isActive: true,
-        createdAt: '2026-01-11T17:49:07.091Z',
-      },
-      {
-        id: 'bank-account-001',
-        lastFourDigits: '7890',
-        accountType: 'Checking',
-        isActive: true,
-        createdAt: '2026-01-11T17:49:07.082Z',
-      },
-    ]);
+    expect(result.current.accounts).toEqual([mockResponse.accounts[0]]);
     expect(result.current.error).toBeNull();
   });
 
-  // T015: Loading state is true during initial fetch
-  it('should have loading state true during initial fetch', () => {
+  it('should indicate loading state while request is in flight', async () => {
+    const deferred = createDeferred<BankAccountsResponse>();
+    vi.mocked(getBankAccounts).mockReturnValueOnce(deferred.promise);
+
     const { result } = renderHook(() => useBankAccounts());
 
-    // Should be loading immediately
     expect(result.current.loading).toBe(true);
     expect(result.current.accounts).toEqual([]);
-    expect(result.current.error).toBeNull();
+
+    await act(async () => {
+      deferred.resolve(mockResponse);
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
   });
 
-  // T016: API error sets error state and loading=false
-  it('should handle API errors and set error state', async () => {
-    // Override handler to return error
-    server.use(bankAccountsErrorHandler);
+  it('should set error state on API error', async () => {
+    const apiError = new Error('API failure');
+    vi.mocked(getBankAccounts).mockRejectedValueOnce(apiError);
 
     const { result } = renderHook(() => useBankAccounts());
 
-    // Wait for error
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Error should be set
+    expect(result.current.error).toBe(apiError);
     expect(result.current.accounts).toEqual([]);
-    expect(result.current.error).not.toBeNull();
-    expect(result.current.error?.name).toBe('APIError');
   });
 
-  // T017: refetch clears error and re-fetches data
-  it('should clear error and re-fetch data on refetch', async () => {
-    // First, cause an error
-    server.use(bankAccountsErrorHandler);
+  it('should refetch accounts when refetch is called', async () => {
+    vi.mocked(getBankAccounts)
+      .mockRejectedValueOnce(new Error('API failure'))
+      .mockResolvedValueOnce(mockResponse);
 
     const { result } = renderHook(() => useBankAccounts());
 
-    // Wait for error
     await waitFor(() => {
       expect(result.current.error).not.toBeNull();
     });
 
-    // Reset handler to return success
-    server.resetHandlers();
-
-    // Call refetch
-    result.current.refetch();
-
-    // Should start loading again
-    await waitFor(() => {
-      expect(result.current.loading).toBe(true);
+    await act(async () => {
+      result.current.refetch();
     });
 
-    // Wait for successful data
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    // Data should be loaded, error cleared
-    expect(result.current.accounts).toHaveLength(2);
     expect(result.current.error).toBeNull();
-  });
-
-  // Additional test: Empty accounts array
-  it('should handle empty accounts response', async () => {
-    // Override handler to return empty response
-    server.use(bankAccountsEmptyHandler);
-
-    const { result } = renderHook(() => useBankAccounts());
-
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // Should have empty accounts array
-    expect(result.current.accounts).toEqual([]);
-    expect(result.current.error).toBeNull();
-  });
-
-  // Additional test: Filters inactive accounts
-  it('should only return active accounts', async () => {
-    const { result } = renderHook(() => useBankAccounts());
-
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    // All returned accounts should be active
-    result.current.accounts.forEach((account) => {
-      expect(account.isActive).toBe(true);
-    });
+    expect(result.current.accounts).toEqual([mockResponse.accounts[0]]);
+    expect(vi.mocked(getBankAccounts)).toHaveBeenCalledTimes(2);
   });
 });

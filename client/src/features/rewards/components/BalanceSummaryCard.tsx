@@ -7,7 +7,7 @@
  * Per FR-033: Display error message with retry action on API failure
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRewardsSummary } from '../hooks/useRewardsSummary';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -19,6 +19,7 @@ export function BalanceSummaryCard() {
   const { data: summary, loading, error, refetch } = useRewardsSummary();
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
+  const navigatingRef = useRef(false);
 
   // Loading state
   if (loading) {
@@ -39,7 +40,9 @@ export function BalanceSummaryCard() {
 
   // Handle withdrawal button click with double-tap protection
   const handleWithdraw = () => {
-    if (isNavigating) return; // Prevent double-tap
+    if (navigatingRef.current || isNavigating) return; // Prevent double-tap
+
+    navigatingRef.current = true;
 
     setIsNavigating(true);
     navigate('/withdraw');

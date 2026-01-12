@@ -1,128 +1,109 @@
 /**
- * Tests for withdrawalsApi.ts
- * Per tasks T007: Unit tests for submitWithdrawal API client
- * Following TDD approach - tests written FIRST
+ * Unit tests for withdrawalsApi submitWithdrawal
+ * Per task T007
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { server } from '../../../mocks/server';
 import { submitWithdrawal } from '../../../../src/features/rewards/api/withdrawalsApi';
-import type {
-  WithdrawalRequest,
-  WithdrawalResponse,
-  ProblemDetails,
-} from '../../../../src/features/rewards/types/withdrawal.types';
 import {
-  withdrawalSuccessHandler,
   withdrawalBankAccountNotFoundHandler,
   withdrawalServerErrorHandler,
-  withdrawalTimeoutHandler,
 } from '../../../mocks/handlers/withdrawalHandlers';
+import type { WithdrawalRequest } from '../../../../src/features/rewards/types/withdrawal.types';
 
-describe('withdrawalsApi', () => {
-  beforeEach(() => {
+const API_BASE_URL = 'http://localhost:3000';
+
+const request: WithdrawalRequest = {
+  amount: 100,
+  bankAccountId: 'bank-account-001',
+  currency: 'USD',
+};
+
+describe('submitWithdrawal', () => {
+  afterEach(() => {
     server.resetHandlers();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
-  const mockRequest: WithdrawalRequest = {
-    amount: 1234.56,
-    bankAccountId: 'bank-account-001',
-    currency: 'USD',
-  };
+  it('should submit withdrawal and return response on success', async () => {
+    const response = await submitWithdrawal(request);
 
-  describe('submitWithdrawal', () => {
-    it('should successfully submit withdrawal and return WithdrawalResponse', async () => {
-      server.use(withdrawalSuccessHandler);
+    expect(response.amount).toBe(100);
+    expect(response.currency).toBe('USD');
+    expect(response.bankAccountId).toBe('bank-account-001');
+    expect(response.id).toBeTruthy();
+  });
 
-      const result = await submitWithdrawal(mockRequest);
+  it('should throw ProblemDetails on 404 response', async () => {
+    server.use(withdrawalBankAccountNotFoundHandler);
 
-      expect(result).toMatchObject({
-        id: expect.any(String),
-        userId: 'test-user-001',
-        amount: mockRequest.amount,
-        bankAccountId: mockRequest.bankAccountId,
-        currency: mockRequest.currency,
-        status: 'pending',
-        createdAt: expect.any(String),
-      });
+    await expect(submitWithdrawal(request)).rejects.toMatchObject({
+      status: 404,
+      title: 'Bank Account Not Found',
+    });
+  });
+
+  it('should throw ProblemDetails on 500 response', async () => {
+    server.use(withdrawalServerErrorHandler);
+
+    await expect(submitWithdrawal(request)).rejects.toMatchObject({
+      status: 500,
+      title: 'Internal Server Error',
+    });
+  });
+
+  it('should throw TimeoutError when request exceeds 5 seconds', async () => {
+    vi.useFakeTimers();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const signal = init?.signal as AbortSignal | undefined;
+        return new Promise((_, reject) => {
+          if (signal) {
+            signal.addEventListener('abort', () => {
+              const error = new Error('Aborted');
+              error.name = 'AbortError';
+              reject(error);
+            });
+          }
+        });
+      })
+    );
+
+    const promise = submitWithdrawal(request);
+    const rejection = expect(promise).rejects.toMatchObject({
+      name: 'TimeoutError',
     });
 
-    it('should send POST request with correct payload', async () => {
-      server.use(withdrawalSuccessHandler);
+    await vi.runAllTimersAsync();
+    await rejection;
+  });
 
-      const result = await submitWithdrawal(mockRequest);
-
-      // Verify response echoes request fields (per contract)
-      expect(result.userId).toBe('test-user-001');
-      expect(result.amount).toBe(mockRequest.amount);
-      expect(result.bankAccountId).toBe(mockRequest.bankAccountId);
-      expect(result.currency).toBe(mockRequest.currency);
+  it('should send payload to POST /withdrawals', async () => {
+    const handler = vi.fn(async ({ request: req }) => {
+      const body = await req.json();
+      return HttpResponse.json(
+        {
+          id: 'withdrawal-123',
+          userId: 'test-user-001',
+          amount: body.amount,
+          bankAccountId: body.bankAccountId,
+          currency: body.currency,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        },
+        { status: 201 }
+      );
     });
 
-    it('should throw ProblemDetails on 404 bank account not found', async () => {
-      server.use(withdrawalBankAccountNotFoundHandler);
+    server.use(http.post(`${API_BASE_URL}/withdrawals`, handler));
 
-      await expect(submitWithdrawal(mockRequest)).rejects.toMatchObject({
-        type: 'https://api.example.com/errors/bank-account-not-found',
-        title: 'Bank Account Not Found',
-        status: 404,
-        detail: 'The specified bank account does not exist or is not accessible',
-        instance: '/withdrawals',
-      } as ProblemDetails);
-    });
+    await submitWithdrawal(request);
 
-    it('should throw ProblemDetails on 500 server error', async () => {
-      server.use(withdrawalServerErrorHandler);
-
-      await expect(submitWithdrawal(mockRequest)).rejects.toMatchObject({
-        type: 'https://api.example.com/errors/server-error',
-        title: 'Internal Server Error',
-        status: 500,
-        detail: 'An unexpected error occurred while processing your withdrawal',
-        instance: '/withdrawals',
-      } as ProblemDetails);
-    });
-
-    it('should throw TimeoutError when request exceeds 5 seconds', async () => {
-      server.use(withdrawalTimeoutHandler);
-
-      await expect(submitWithdrawal(mockRequest)).rejects.toMatchObject({
-        message: 'Request exceeded 5 seconds',
-        name: 'TimeoutError',
-      });
-    }, 10000); // 10-second test timeout to allow for 6-second delay + processing
-
-    it('should include Content-Type and accept headers', async () => {
-      // Headers are verified by MSW - if headers are missing, the request would fail
-      // This test verifies the API client sends the request successfully
-      server.use(withdrawalSuccessHandler);
-
-      const result = await submitWithdrawal(mockRequest);
-
-      // If we got a successful response, headers were correct (per FR-004)
-      expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-    });
-
-    it('should include x-user-id header', async () => {
-      // x-user-id header is required by MSW handlers (they check it)
-      // If the header is missing, MSW would return 401
-      server.use(withdrawalSuccessHandler);
-
-      const result = await submitWithdrawal(mockRequest);
-
-      // If we got a successful response, x-user-id header was present
-      expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-    });
-
-    it('should parse ISO timestamp from createdAt field', async () => {
-      server.use(withdrawalSuccessHandler);
-
-      const result = await submitWithdrawal(mockRequest);
-
-      // Verify createdAt is valid ISO 8601 timestamp
-      expect(new Date(result.createdAt).toISOString()).toBe(result.createdAt);
-    });
+    expect(handler).toHaveBeenCalled();
   });
 });

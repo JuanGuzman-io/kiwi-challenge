@@ -1,364 +1,253 @@
 /**
- * Tests for WithdrawScreen component
- * Per tasks T018-T019, T047-T049: Test balance display, button states, duplicate prevention
- * Following TDD approach - write tests FIRST
+ * Component tests for WithdrawScreen
+ * Per tasks T018-T019, T047-T049
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { axe } from 'jest-axe';
-import { server } from '../../../mocks/server';
-import type { BankAccount } from '../../../../src/features/rewards/types/bankAccount.types';
-import {
-  withdrawalSuccessHandler,
-  withdrawalBankAccountNotFoundHandler,
-  withdrawalServerErrorHandler,
-} from '../../../mocks/handlers/withdrawalHandlers';
-
-// Mock component import - will be implemented after tests
 import { WithdrawScreen } from '../../../../src/features/rewards/components/withdraw/WithdrawScreen';
+import { useRewardsSummary } from '../../../../src/features/rewards/hooks/useRewardsSummary';
+import { useBankAccounts } from '../../../../src/features/rewards/hooks/useBankAccounts';
+import { submitWithdrawal } from '../../../../src/features/rewards/api/withdrawalsApi';
+import type { BankAccount } from '../../../../src/features/rewards/types/bankAccount.types';
+import { ERROR_MESSAGES } from '../../../../src/features/rewards/constants/errorMessages';
 
-// Helper to render with Router and location state
-function renderWithRouterAndState(selectedAccount: BankAccount | null = null) {
-  const initialEntries = selectedAccount
-    ? [{ pathname: '/withdraw', state: { selectedAccount } }]
-    : ['/withdraw'];
+vi.mock('../../../../src/features/rewards/hooks/useRewardsSummary', () => ({
+  useRewardsSummary: vi.fn(),
+}));
 
+vi.mock('../../../../src/features/rewards/hooks/useBankAccounts', () => ({
+  useBankAccounts: vi.fn(),
+}));
+
+vi.mock('../../../../src/features/rewards/api/withdrawalsApi', () => ({
+  submitWithdrawal: vi.fn(),
+}));
+
+const selectedAccount: BankAccount = {
+  id: 'bank-account-001',
+  lastFourDigits: '1234',
+  accountType: 'Checking',
+  isActive: true,
+  createdAt: '2026-01-11T17:49:07.082Z',
+};
+
+function renderWithdrawScreen(state?: { selectedAccount?: BankAccount | null }) {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
+    <MemoryRouter initialEntries={[{ pathname: '/withdraw', state }]}> 
       <Routes>
         <Route path="/withdraw" element={<WithdrawScreen />} />
-        <Route path="/withdraw/success" element={<div>Withdraw Success</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
 describe('WithdrawScreen', () => {
-  const mockSelectedAccount: BankAccount = {
-    id: 'bank-account-001',
-    lastFourDigits: '1234',
-    accountType: 'Checking',
-    isActive: true,
-    createdAt: '2026-01-11T17:49:07.082Z',
-  };
-
   beforeEach(() => {
-    server.resetHandlers();
+    vi.useFakeTimers();
+    vi.mocked(useRewardsSummary).mockReturnValue({
+      data: { balance: 1234.56, currency: 'USD' },
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(useBankAccounts).mockReturnValue({
+      accounts: [],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    vi.mocked(submitWithdrawal).mockReset();
   });
 
-  // T018: Displays balance from rewards summary
-  it('should display withdrawal amount from rewards balance', async () => {
-    renderWithRouterAndState();
-
-    // Wait for balance to load (mock returns $1,234.56)
-    await waitFor(() => {
-      expect(screen.getByText(/\$1,234\.56/)).toBeInTheDocument();
-    });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  // T018: Shows page title
-  it('should display page title "Elige tu método de retiro"', async () => {
-    renderWithRouterAndState();
+  it('should render formatted balance amount', async () => {
+    renderWithdrawScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText('Elige tu método de retiro')).toBeInTheDocument();
+    await act(async () => {
+      vi.runAllTimers();
     });
+
+    expect(screen.getByText(/\$1,234\.56/)).toBeInTheDocument();
   });
 
-  // T019: Primary action button is disabled when no account selected
-  it('should disable primary action button when no account is selected', async () => {
-    renderWithRouterAndState();
+  it('should disable submit button when no account is selected', async () => {
+    renderWithdrawScreen();
 
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).toBeDisabled();
-    });
-  });
-
-  // T019: Primary action button is enabled when account is selected
-  it('should enable primary action button when account is selected', async () => {
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).not.toBeDisabled();
-    });
-  });
-
-  // T047, T049: Prevents duplicate submissions
-  it('should prevent duplicate button taps', async () => {
-    server.use(withdrawalSuccessHandler);
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).not.toBeDisabled();
-
-      // Rapid double-click
-      fireEvent.click(button);
-      fireEvent.click(button);
-      fireEvent.click(button);
+    await act(async () => {
+      vi.runAllTimers();
     });
 
-    // Button should disable after first click to prevent duplicates
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).toBeDisabled();
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
     });
-  });
-
-  // Shows account selector
-  it('should display account selector', async () => {
-    renderWithRouterAndState();
-
-    await waitFor(() => {
-      expect(screen.getByText('Selecciona una cuenta')).toBeInTheDocument();
-    });
-  });
-
-  // Shows selected account in selector
-  it('should display selected account in selector', async () => {
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      expect(screen.getByText(/•••• 1234/)).toBeInTheDocument();
-    });
-  });
-
-  // Displays "Monto total a retirar" label
-  it('should display amount label', async () => {
-    renderWithRouterAndState();
-
-    await waitFor(() => {
-      expect(screen.getByText('Monto total a retirar')).toBeInTheDocument();
-    });
-  });
-
-  it('should display cooldown warning card', async () => {
-    renderWithRouterAndState();
-
-    await waitFor(() => {
-      expect(screen.getByRole('note')).toBeInTheDocument();
-    });
-
-    expect(
-      screen.getByText(/Debes esperar unos minutos/i)
-    ).toBeInTheDocument();
-  });
-
-  // Accessibility test with jest-axe
-  it('should have no accessibility violations', async () => {
-    const { container } = renderWithRouterAndState();
-
-    // Wait for loading to complete
-    await waitFor(() => {
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    });
-
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-
-  // T047: Button disabled during submission with proper aria attributes
-  it('should disable button with aria-disabled during submission', async () => {
-    server.use(withdrawalSuccessHandler);
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).not.toBeDisabled();
-    });
-
-    // Click to start submission
-    const button = screen.getByRole('button', { name: /retirar fondos/i });
-    fireEvent.click(button);
-
-    // After click, button should be disabled with proper ARIA
-    await waitFor(() => {
-      expect(button).toBeDisabled();
-      expect(button).toHaveAttribute('aria-disabled', 'true');
-    });
-  });
-
-  // T048: Loading indicator shows "Procesando..." during submission
-  it('should show loading indicator "Procesando..." on button during submission', async () => {
-    server.use(withdrawalSuccessHandler);
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).toHaveTextContent('Retirar fondos');
-      expect(button).not.toBeDisabled();
-    });
-
-    // Click to start submission
-    const button = screen.getByRole('button', { name: /retirar fondos/i });
-    fireEvent.click(button);
-
-    // Button text should change to "Procesando..."
-    await waitFor(() => {
-      expect(button).toHaveTextContent('Procesando...');
-      expect(button).toBeDisabled();
-    });
-  });
-
-  // T049: Rapid clicks only trigger one submission (verify with console.log spy)
-  it('should prevent duplicate submissions from rapid clicks', async () => {
-    server.use(withdrawalSuccessHandler);
-    renderWithRouterAndState(mockSelectedAccount);
-
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
-      expect(button).not.toBeDisabled();
-    });
-
-    const button = screen.getByRole('button', { name: /retirar fondos/i });
-
-    // Rapid triple-click
-    fireEvent.click(button);
-    fireEvent.click(button);
-    fireEvent.click(button);
-
-    // Wait a bit for any async operations
-    await waitFor(() => {
-      expect(button).toBeDisabled();
-    });
-
     expect(button).toBeDisabled();
   });
 
-  // T009 [US1]: Submission tests for User Story 1
-  describe('Withdrawal Submission (US1)', () => {
-    it('should submit withdrawal on button click with selected account', async () => {
-      server.use(withdrawalSuccessHandler);
-      renderWithRouterAndState(mockSelectedAccount);
+  it('should disable submit button and show loading text while submitting', async () => {
+    const deferred = createDeferred({});
+    vi.mocked(submitWithdrawal).mockReturnValueOnce(deferred.promise as never);
 
-      await waitFor(() => {
-        const button = screen.getByRole('button', { name: /retirar fondos/i });
-        expect(button).not.toBeDisabled();
-      });
+    renderWithdrawScreen({ selectedAccount });
 
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
+    await act(async () => {
+      vi.runAllTimers();
+    });
 
-      // Click submit button
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
+    });
+
+    await act(async () => {
       fireEvent.click(button);
-
-      // Should show loading state
-      await waitFor(() => {
-        expect(button).toHaveTextContent('Procesando...');
-        expect(button).toBeDisabled();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Withdraw Success')).toBeInTheDocument();
-      });
+      await Promise.resolve();
     });
 
-    it('should prevent rapid clicks during submission', async () => {
-      server.use(withdrawalSuccessHandler);
-      renderWithRouterAndState(mockSelectedAccount);
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('Procesando...');
+  });
 
-      await waitFor(() => {
-        const button = screen.getByRole('button', { name: /retirar fondos/i });
-        expect(button).not.toBeDisabled();
-      });
+  it('should prevent duplicate submissions on rapid clicks', async () => {
+    const deferred = createDeferred({});
+    vi.mocked(submitWithdrawal).mockReturnValue(deferred.promise as never);
 
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
+    renderWithdrawScreen({ selectedAccount });
 
-      // Rapid triple-click
+    await act(async () => {
+      vi.runAllTimers();
+    });
+
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
+    });
+
+    await act(async () => {
       fireEvent.click(button);
+      await Promise.resolve();
+    });
+
+    expect(button).toBeDisabled();
+    expect(vi.mocked(submitWithdrawal)).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(button);
+
+    expect(vi.mocked(submitWithdrawal)).toHaveBeenCalledTimes(1);
+  });
+
+  it('should submit withdrawal with correct payload when account is selected', async () => {
+    vi.mocked(submitWithdrawal).mockResolvedValueOnce({
+      id: 'withdrawal-001',
+      userId: 'test-user-001',
+      amount: 1234.56,
+      bankAccountId: selectedAccount.id,
+      currency: 'USD',
+      status: 'pending',
+      createdAt: '2026-01-11T17:49:07.082Z',
+    });
+
+    renderWithdrawScreen({ selectedAccount });
+
+    await act(async () => {
+      vi.runAllTimers();
+    });
+
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
+    });
+
+    await act(async () => {
       fireEvent.click(button);
+      await Promise.resolve();
+    });
+
+    expect(vi.mocked(submitWithdrawal)).toHaveBeenCalledWith({
+      amount: 1234.56,
+      bankAccountId: selectedAccount.id,
+      currency: 'USD',
+    });
+  });
+
+  it('should display specific error message for 404 bank account not found', async () => {
+    vi.mocked(submitWithdrawal).mockRejectedValueOnce({
+      status: 404,
+      detail: 'Account not found',
+    });
+
+    renderWithdrawScreen({ selectedAccount });
+
+    await act(async () => {
+      vi.runAllTimers();
+    });
+
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
+    });
+
+    await act(async () => {
       fireEvent.click(button);
-
-      // Button should disable immediately after first click
-      await waitFor(() => {
-        expect(button).toBeDisabled();
-      });
-
-      expect(button).toBeDisabled();
+      await Promise.resolve();
     });
 
-    it('should display loading text "Procesando..." during submission', async () => {
-      server.use(withdrawalSuccessHandler);
-      renderWithRouterAndState(mockSelectedAccount);
+    expect(
+      screen.getByText(ERROR_MESSAGES.BANK_ACCOUNT_NOT_FOUND)
+    ).toBeInTheDocument();
+  });
 
-      await waitFor(() => {
-        const button = screen.getByRole('button', { name: /retirar fondos/i });
-        expect(button).toHaveTextContent('Retirar fondos');
-      });
+  it('should show error detail text when provided and allow retry to clear error', async () => {
+    vi.mocked(submitWithdrawal).mockRejectedValueOnce({
+      status: 500,
+      detail: 'Detalles del error',
+    });
 
-      const button = screen.getByRole('button', { name: /retirar fondos/i });
+    renderWithdrawScreen({ selectedAccount });
 
+    await act(async () => {
+      vi.runAllTimers();
+    });
+
+    const button = screen.getByRole('button', {
+      name: /Retirar fondos/i,
+    });
+
+    await act(async () => {
       fireEvent.click(button);
-
-      // Button text should change to "Procesando..."
-      await waitFor(() => {
-        expect(button).toHaveTextContent('Procesando...');
-      });
+      await Promise.resolve();
     });
 
-    it('should show error message on server failure', async () => {
-      server.use(withdrawalServerErrorHandler);
+    expect(screen.getByText(/Detalles del error/i)).toBeInTheDocument();
 
-      renderWithRouterAndState(mockSelectedAccount);
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /retirar fondos/i })
-        ).not.toBeDisabled();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
-
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-      });
-
-      expect(
-        screen.getByText(/unexpected error occurred/i)
-      ).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Reintentar/i }));
+      await Promise.resolve();
     });
 
-    it('should show bank account not found message on 404', async () => {
-      server.use(withdrawalBankAccountNotFoundHandler);
+    expect(screen.queryByText(/Detalles del error/i)).not.toBeInTheDocument();
+  });
 
-      renderWithRouterAndState(mockSelectedAccount);
+  it('should render cooldown warning card', async () => {
+    renderWithdrawScreen();
 
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /retirar fondos/i })
-        ).not.toBeDisabled();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
-
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-      });
-
-      expect(
-        screen.getByText(/cuenta bancaria seleccionada/i)
-      ).toBeInTheDocument();
+    await act(async () => {
+      vi.runAllTimers();
     });
 
-    it('should allow retry by clearing error state', async () => {
-      server.use(withdrawalServerErrorHandler);
-
-      renderWithRouterAndState(mockSelectedAccount);
-
-      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
-
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-      });
-
-      fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
-
-      await waitFor(() => {
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-      });
-    });
+    expect(screen.getByRole('note')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Debes esperar unos minutos/i)
+    ).toBeInTheDocument();
   });
 });

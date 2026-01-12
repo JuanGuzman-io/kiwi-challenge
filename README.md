@@ -110,6 +110,64 @@ Validate consistency across all artifacts.
    - Setup and run instructions
    - Any assumptions made
 
+## Implemented Features
+
+### Frontend (Rewards + Withdraw)
+- Rewards home UI with summary card, transaction list, and icons.
+- Withdraw flow UI: account selector, account list, warning card, and submit CTA.
+- Success screen at `/withdraw/success` with confirmation message, fallback checkmark, and return CTA.
+- Loading + skeleton states for smooth navigation on withdraw/account screens.
+- Inline error handling + retry for withdrawal submission.
+- Poppins font loaded globally (Google Fonts).
+
+### Backend (Rewards + Withdraw)
+- Identity guard wired globally for `x-user-id` (fallback in dev).
+- Prisma migrations + seed for rewards/bank accounts.
+- Rewards balance calculation and transaction history.
+- Withdrawals: validation, balance checks, ledger transaction creation.
+- DTOs updated to rely on `x-user-id` (no `userId` in body).
+
+## Setup
+
+### Backend
+```bash
+cd server
+cp .env.example .env
+# update DATABASE_URL in .env
+npx prisma migrate dev --name init
+npx prisma db seed
+npm run start:dev
+```
+
+### Frontend
+```bash
+cd client
+npm install
+npm run dev
+```
+
+## API Notes
+- All protected endpoints require `x-user-id`.
+- Withdrawals POST expects:
+```json
+{
+  "amount": 101.25,
+  "bankAccountId": "<UUID>",
+  "currency": "USD"
+}
+```
+
+## Helpful Commands
+```bash
+# Prisma Studio
+cd server
+npx prisma studio
+
+# Run frontend tests
+cd client
+npm run test
+```
+
 ## Getting Started
 
 ```bash

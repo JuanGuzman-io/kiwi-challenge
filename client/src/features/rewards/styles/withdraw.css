@@ -1,0 +1,464 @@
+/**
+ * Withdraw Feature Styles
+ * Per FR-036 through FR-045: Design specifications for withdraw flow
+ * Per FR-028 through FR-035: WCAG 2.1 AA accessibility requirements
+ */
+
+/* FR-036: Withdraw screen container */
+.withdraw-screen {
+  width: min(375px, 100%);
+  min-height: 652px;
+  padding: 54px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #FFFFFF;
+  animation: withdraw-fade 180ms ease-out;
+}
+
+.withdraw-screen--skeleton {
+  gap: 16px;
+}
+
+.withdraw-screen--skeleton .skeleton-back {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+}
+
+.withdraw-screen--skeleton .skeleton-title {
+  width: 220px;
+  height: 24px;
+}
+
+.withdraw-screen--skeleton .skeleton-amount-label {
+  width: 150px;
+  height: 12px;
+}
+
+.withdraw-screen--skeleton .skeleton-amount-value {
+  width: 220px;
+  height: 44px;
+}
+
+.withdraw-screen--skeleton .skeleton-selector {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.withdraw-screen--skeleton .skeleton-warning {
+  width: 100%;
+  height: 64px;
+  border-radius: 8px;
+}
+
+.withdraw-screen--skeleton .skeleton-cta {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.back-button {
+  width: 60px;
+  height: 60px;
+  border: none;
+  background: transparent !important;
+  color: #000 !important;
+  color: var(--ink-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: left;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.back-button:hover {
+  color: var(--ink);
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* FR-037: Title text styling */
+.withdraw-screen h1 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: 0;
+  color: var(--ink-strong);
+}
+
+/* FR-040: Withdraw amount section container */
+.withdraw-amount-section {
+  width: min(327px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* FR-038: "Monto total a retirar" label - text small */
+.withdraw-amount-section label {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+/* FR-039: Withdrawal amount value - text 5xl (bold) */
+.withdraw-amount-section .amount-value {
+  margin: 0;
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: bolder;
+  color: var(--ink-strong);
+}
+
+/* FR-043, FR-044, FR-045: Account selector styles */
+.account-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.account-selector .selector-label {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.account-selector .selector-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.account-selector .selector-leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-selector .selector-icon-card {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #33CAFF;
+}
+
+.account-selector .selector-icon-card svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Warning card above primary action */
+.withdraw-warning-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+}
+
+.withdraw-warning-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+}
+
+.withdraw-warning-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink);
+}
+
+.withdraw-warning-text strong {
+  font-weight: 600;
+}
+
+.withdraw-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.account-selector .selector-button:hover:not(:disabled) {
+  border-color: var(--ink-muted);
+  background: var(--surface-soft);
+}
+
+/* FR-044: Placeholder state */
+.account-selector .selector-text {
+  color: var(--ink-muted);
+}
+
+/* FR-045: Selected account (override placeholder color) */
+.account-selector .selector-button:not([aria-label*="Selecciona una cuenta bancaria"]) .selector-text {
+  color: var(--ink-strong);
+  font-weight: 500;
+}
+
+.account-selector .selector-icon {
+  font-size: 20px;
+  color: var(--ink-muted);
+}
+
+/* Loading state for account selector */
+.account-selector.loading {
+  opacity: 0.6;
+}
+
+.skeleton-selector {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+/* Error state for account selector */
+.account-selector.error {
+  width: 100%;
+}
+
+/* Primary action button styles */
+.withdraw-screen .primary-action-button,
+.withdraw-screen button[type="button"]:not(.selector-button):not(.error-retry-button):not(.back-button) {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+/* FR-042: Primary action button enabled state */
+.withdraw-screen .primary-action-button:not(:disabled) {
+  background: #33CAFF;
+  color: #FFFFFF;
+}
+
+.withdraw-screen .primary-action-button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(51, 202, 255, 0.32);
+}
+
+/* FR-041: Primary action button disabled state */
+.withdraw-screen .primary-action-button:disabled {
+  background: #CBD5E1;
+  color: #FFFFFF;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Account List page styles */
+.account-list-page {
+  width: min(375px, 100%);
+  padding: 54px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: #FFFFFF;
+}
+
+.account-list-page h1 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: 0;
+  color: var(--ink-strong);
+}
+
+.account-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Account List Item styles */
+.account-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, transform 80ms ease;
+}
+
+.account-list-item:hover {
+  border-color: var(--ink-muted);
+  background: var(--surface-soft);
+  transform: translateY(-1px);
+}
+
+.account-list-item:active {
+  transform: translateY(0);
+}
+
+.account-list-item .account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.account-list-item .account-icon {
+  width: 40px;
+  height: 40px;
+  padding: 10px;
+  border-radius: 1000px;
+  background: #F1F5F9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.account-list-item .account-number {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  letter-spacing: 0.5px;
+}
+
+.account-list-item .account-type {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.account-list-item .account-icon {
+  font-size: 20px;
+  color: var(--ink-muted);
+}
+
+/* WCAG 2.1 AA Focus States - Per FR-028 through FR-035 */
+/* FR-030, FR-033: 2px visible focus indicator with 3:1 contrast ratio */
+
+.withdraw-screen button:focus-visible,
+.account-selector .selector-button:focus-visible,
+.account-list-item:focus-visible,
+.error-retry-button:focus-visible {
+  outline: 2px solid #33CAFF;
+  outline-offset: 2px;
+  border-color: #33CAFF;
+}
+
+/* High contrast focus for disabled elements */
+.withdraw-screen button:disabled:focus-visible {
+  outline: 2px solid var(--ink-muted);
+  outline-offset: 2px;
+}
+
+/* Ensure focus is never hidden */
+*:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+}
+
+/* Remove default focus outline (replaced with :focus-visible) */
+.withdraw-screen button:focus:not(:focus-visible),
+.account-selector .selector-button:focus:not(:focus-visible),
+.account-list-item:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Loading and Error States */
+.loading-state.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.skeleton-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--surface-soft);
+  border-top-color: var(--accent);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 375px) {
+  .withdraw-screen,
+  .account-list-page {
+    width: 100%;
+    padding: 16px;
+    margin-top: 40px;
+  }
+
+  .withdraw-amount-section .amount-value {
+    font-size: 40px;
+    line-height: 48px;
+    font-weight: bolder;
+  }
+}
+
+/* Print styles (accessibility requirement) */
+@media print {
+  .withdraw-screen,
+  .account-list-page {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  button {
+    border: 1px solid #000;
+  }
+}
+
+@keyframes withdraw-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -122,4 +122,42 @@ export const handlers = [
       { status: 400 }
     );
   }),
+
+  // GET /bank-accounts - Success response
+  http.get('/bank-accounts', ({ request }) => {
+    const userId = request.headers.get('x-user-id');
+
+    if (!userId) {
+      return HttpResponse.json(
+        {
+          type: 'https://api.example.com/problems/unauthorized',
+          title: 'Unauthorized',
+          status: 401,
+          detail: 'Missing or invalid x-user-id header',
+        },
+        { status: 401 }
+      );
+    }
+
+    // Success response with multiple accounts
+    return HttpResponse.json({
+      accounts: [
+        {
+          id: 'bank-account-002',
+          lastFourDigits: '4321',
+          accountType: 'Savings',
+          isActive: true,
+          createdAt: '2026-01-11T17:49:07.091Z',
+        },
+        {
+          id: 'bank-account-001',
+          lastFourDigits: '7890',
+          accountType: 'Checking',
+          isActive: true,
+          createdAt: '2026-01-11T17:49:07.082Z',
+        },
+      ],
+      count: 2,
+    });
+  }),
 ];

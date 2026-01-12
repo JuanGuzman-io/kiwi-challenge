@@ -27,4 +27,16 @@ export const ERROR_MESSAGES = {
    * Per FR-053, clarification
    */
   TIMEOUT: 'La solicitud tardó demasiado. Por favor, intenta de nuevo.',
+
+  /**
+   * Error message when GET /bank-accounts fails or times out
+   * Per FR-024: Clear error message in Spanish for account fetch failures
+   */
+  BANK_ACCOUNTS_LOAD_FAILED: 'No pudimos cargar tus cuentas bancarias. Por favor, intenta de nuevo.',
+
+  /**
+   * Empty state message when user has no linked bank accounts
+   * Per edge case handling in spec
+   */
+  NO_BANK_ACCOUNTS: 'No tienes cuentas bancarias vinculadas',
 } as const;

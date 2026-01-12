@@ -14,7 +14,7 @@ interface LoadingStateProps {
 export function LoadingState({ type = 'balance' }: LoadingStateProps) {
   if (type === 'balance') {
     return (
-      <div className="loading-state balance" role="status" aria-label="Cargando balance">
+      <div className="loading-state balance" role="status" aria-live="polite" aria-label="Cargando balance">
         <div className="skeleton skeleton-title"></div>
         <div className="skeleton skeleton-amount"></div>
         <div className="skeleton skeleton-button"></div>
@@ -24,7 +24,7 @@ export function LoadingState({ type = 'balance' }: LoadingStateProps) {
 
   if (type === 'transactions') {
     return (
-      <div className="loading-state transactions" role="status" aria-label="Cargando transacciones">
+      <div className="loading-state transactions" role="status" aria-live="polite" aria-label="Cargando transacciones">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="skeleton skeleton-transaction">
             <div className="skeleton skeleton-text"></div>
@@ -37,7 +37,7 @@ export function LoadingState({ type = 'balance' }: LoadingStateProps) {
 
   if (type === 'pagination') {
     return (
-      <div className="loading-state pagination" role="status" aria-label="Cargando más transacciones">
+      <div className="loading-state pagination" role="status" aria-live="polite" aria-label="Cargando más transacciones">
         <div className="skeleton skeleton-spinner"></div>
       </div>
     );

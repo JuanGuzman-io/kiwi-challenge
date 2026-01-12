@@ -136,14 +136,14 @@ cp .env.example .env
 # update DATABASE_URL in .env
 npx prisma migrate dev --name init
 npx prisma db seed
-npm run start:dev
+pnpm run start:dev
 ```
 
 ### Frontend
 ```bash
 cd client
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## API Notes
@@ -165,7 +165,7 @@ npx prisma studio
 
 # Run frontend tests
 cd client
-npm run test
+pnpm run test
 ```
 
 ## Getting Started

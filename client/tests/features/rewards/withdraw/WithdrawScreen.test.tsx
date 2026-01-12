@@ -4,12 +4,17 @@
  * Following TDD approach - write tests FIRST
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { axe } from 'jest-axe';
 import { server } from '../../../mocks/server';
 import type { BankAccount } from '../../../../src/features/rewards/types/bankAccount.types';
+import {
+  withdrawalSuccessHandler,
+  withdrawalBankAccountNotFoundHandler,
+  withdrawalServerErrorHandler,
+} from '../../../mocks/handlers/withdrawalHandlers';
 
 // Mock component import - will be implemented after tests
 import { WithdrawScreen } from '../../../../src/features/rewards/components/withdraw/WithdrawScreen';
@@ -24,6 +29,7 @@ function renderWithRouterAndState(selectedAccount: BankAccount | null = null) {
     <MemoryRouter initialEntries={initialEntries}>
       <Routes>
         <Route path="/withdraw" element={<WithdrawScreen />} />
+        <Route path="/withdraw/success" element={<div>Withdraw Success</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -66,7 +72,7 @@ describe('WithdrawScreen', () => {
     renderWithRouterAndState();
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).toBeDisabled();
     });
   });
@@ -76,17 +82,18 @@ describe('WithdrawScreen', () => {
     renderWithRouterAndState(mockSelectedAccount);
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).not.toBeDisabled();
     });
   });
 
   // T047, T049: Prevents duplicate submissions
   it('should prevent duplicate button taps', async () => {
+    server.use(withdrawalSuccessHandler);
     renderWithRouterAndState(mockSelectedAccount);
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).not.toBeDisabled();
 
       // Rapid double-click
@@ -95,10 +102,9 @@ describe('WithdrawScreen', () => {
       fireEvent.click(button);
     });
 
-    // Should only trigger once (US3 - out of scope for now, but button should disable)
+    // Button should disable after first click to prevent duplicates
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
-      // Button should be disabled after first click to prevent duplicates
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).toBeDisabled();
     });
   });
@@ -130,6 +136,18 @@ describe('WithdrawScreen', () => {
     });
   });
 
+  it('should display cooldown warning card', async () => {
+    renderWithRouterAndState();
+
+    await waitFor(() => {
+      expect(screen.getByRole('note')).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText(/Debes esperar unos minutos/i)
+    ).toBeInTheDocument();
+  });
+
   // Accessibility test with jest-axe
   it('should have no accessibility violations', async () => {
     const { container } = renderWithRouterAndState();
@@ -145,15 +163,16 @@ describe('WithdrawScreen', () => {
 
   // T047: Button disabled during submission with proper aria attributes
   it('should disable button with aria-disabled during submission', async () => {
+    server.use(withdrawalSuccessHandler);
     renderWithRouterAndState(mockSelectedAccount);
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).not.toBeDisabled();
     });
 
     // Click to start submission
-    const button = screen.getByRole('button', { name: /continuar/i });
+    const button = screen.getByRole('button', { name: /retirar fondos/i });
     fireEvent.click(button);
 
     // After click, button should be disabled with proper ARIA
@@ -165,16 +184,17 @@ describe('WithdrawScreen', () => {
 
   // T048: Loading indicator shows "Procesando..." during submission
   it('should show loading indicator "Procesando..." on button during submission', async () => {
+    server.use(withdrawalSuccessHandler);
     renderWithRouterAndState(mockSelectedAccount);
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
-      expect(button).toHaveTextContent('Continuar');
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
+      expect(button).toHaveTextContent('Retirar fondos');
       expect(button).not.toBeDisabled();
     });
 
     // Click to start submission
-    const button = screen.getByRole('button', { name: /continuar/i });
+    const button = screen.getByRole('button', { name: /retirar fondos/i });
     fireEvent.click(button);
 
     // Button text should change to "Procesando..."
@@ -186,17 +206,15 @@ describe('WithdrawScreen', () => {
 
   // T049: Rapid clicks only trigger one submission (verify with console.log spy)
   it('should prevent duplicate submissions from rapid clicks', async () => {
-    // Spy on console.log to verify only one submission
-    const consoleLogSpy = vi.spyOn(console, 'log');
-
+    server.use(withdrawalSuccessHandler);
     renderWithRouterAndState(mockSelectedAccount);
 
     await waitFor(() => {
-      const button = screen.getByRole('button', { name: /continuar/i });
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
       expect(button).not.toBeDisabled();
     });
 
-    const button = screen.getByRole('button', { name: /continuar/i });
+    const button = screen.getByRole('button', { name: /retirar fondos/i });
 
     // Rapid triple-click
     fireEvent.click(button);
@@ -208,13 +226,139 @@ describe('WithdrawScreen', () => {
       expect(button).toBeDisabled();
     });
 
-    // Verify console.log was called exactly once (from handleSubmit)
-    const withdrawCalls = consoleLogSpy.mock.calls.filter(
-      (call) => call[0] === 'Withdrawing to account:' && call[1] === mockSelectedAccount
-    );
-    expect(withdrawCalls).toHaveLength(1);
+    expect(button).toBeDisabled();
+  });
 
-    // Cleanup spy
-    consoleLogSpy.mockRestore();
+  // T009 [US1]: Submission tests for User Story 1
+  describe('Withdrawal Submission (US1)', () => {
+    it('should submit withdrawal on button click with selected account', async () => {
+      server.use(withdrawalSuccessHandler);
+      renderWithRouterAndState(mockSelectedAccount);
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /retirar fondos/i });
+        expect(button).not.toBeDisabled();
+      });
+
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
+
+      // Click submit button
+      fireEvent.click(button);
+
+      // Should show loading state
+      await waitFor(() => {
+        expect(button).toHaveTextContent('Procesando...');
+        expect(button).toBeDisabled();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Withdraw Success')).toBeInTheDocument();
+      });
+    });
+
+    it('should prevent rapid clicks during submission', async () => {
+      server.use(withdrawalSuccessHandler);
+      renderWithRouterAndState(mockSelectedAccount);
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /retirar fondos/i });
+        expect(button).not.toBeDisabled();
+      });
+
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
+
+      // Rapid triple-click
+      fireEvent.click(button);
+      fireEvent.click(button);
+      fireEvent.click(button);
+
+      // Button should disable immediately after first click
+      await waitFor(() => {
+        expect(button).toBeDisabled();
+      });
+
+      expect(button).toBeDisabled();
+    });
+
+    it('should display loading text "Procesando..." during submission', async () => {
+      server.use(withdrawalSuccessHandler);
+      renderWithRouterAndState(mockSelectedAccount);
+
+      await waitFor(() => {
+        const button = screen.getByRole('button', { name: /retirar fondos/i });
+        expect(button).toHaveTextContent('Retirar fondos');
+      });
+
+      const button = screen.getByRole('button', { name: /retirar fondos/i });
+
+      fireEvent.click(button);
+
+      // Button text should change to "Procesando..."
+      await waitFor(() => {
+        expect(button).toHaveTextContent('Procesando...');
+      });
+    });
+
+    it('should show error message on server failure', async () => {
+      server.use(withdrawalServerErrorHandler);
+
+      renderWithRouterAndState(mockSelectedAccount);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /retirar fondos/i })
+        ).not.toBeDisabled();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText(/unexpected error occurred/i)
+      ).toBeInTheDocument();
+    });
+
+    it('should show bank account not found message on 404', async () => {
+      server.use(withdrawalBankAccountNotFoundHandler);
+
+      renderWithRouterAndState(mockSelectedAccount);
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /retirar fondos/i })
+        ).not.toBeDisabled();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByText(/cuenta bancaria seleccionada/i)
+      ).toBeInTheDocument();
+    });
+
+    it('should allow retry by clearing error state', async () => {
+      server.use(withdrawalServerErrorHandler);
+
+      renderWithRouterAndState(mockSelectedAccount);
+
+      fireEvent.click(screen.getByRole('button', { name: /retirar fondos/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /reintentar/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      });
+    });
   });
 });

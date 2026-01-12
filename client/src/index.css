@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
 :root {
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: "Poppins", "Segoe UI", sans-serif;
   line-height: 1.4;
   font-weight: 400;
   font-synthesis: none;

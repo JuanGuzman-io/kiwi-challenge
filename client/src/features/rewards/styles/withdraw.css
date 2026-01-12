@@ -180,8 +180,8 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: 8px;
-  border: 1px solid var(--surface-border);
-  background: var(--surface);
+  border: 1px solid #e3e3e3;
+
 }
 
 .withdraw-warning-icon {
@@ -194,7 +194,6 @@
   margin: 0;
   font-size: 13px;
   line-height: 18px;
-  color: var(--ink);
 }
 
 .withdraw-warning-text strong {
@@ -206,6 +205,34 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.withdraw-submit-error {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.withdraw-submit-error-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: #b91c1c;
+}
+
+.withdraw-submit-retry {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
 }
 
 .account-selector .selector-button:hover:not(:disabled) {
@@ -247,7 +274,7 @@
 
 /* Primary action button styles */
 .withdraw-screen .primary-action-button,
-.withdraw-screen button[type="button"]:not(.selector-button):not(.error-retry-button):not(.back-button) {
+.withdraw-screen button[type="button"]:not(.selector-button):not(.error-retry-button):not(.back-button):not(.withdraw-submit-retry) {
   width: 100%;
   min-height: 48px;
   padding: 12px 24px;

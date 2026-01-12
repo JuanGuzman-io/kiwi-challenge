@@ -5,6 +5,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import { withdrawalHandlers } from './handlers/withdrawalHandlers';
 
 // Mock data
 const mockSummary = {
@@ -160,4 +161,7 @@ export const handlers = [
       count: 2,
     });
   }),
+
+  // POST /withdrawals - from withdrawalHandlers.ts (003-withdraw-submit)
+  ...withdrawalHandlers,
 ];

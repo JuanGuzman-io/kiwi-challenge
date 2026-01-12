@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: Withdrawals API
+  description: API contract for withdrawal submission and success confirmation feature (003-withdraw-submit)
+  version: 1.0.0
+  contact:
+    name: Kiwi Challenge
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+paths:
+  /withdrawals:
+    post:
+      summary: Submit withdrawal request
+      description: |
+        Creates a new withdrawal request to transfer funds from the user's rewards balance
+        to their selected bank account. This endpoint validates the withdrawal amount against
+        the current balance and ensures the bank account belongs to the user.
+
+        **Business Rules**:
+        - Amount must match the user's current rewards balance (full withdrawal only)
+        - Bank account must be active and belong to the authenticated user
+        - Cooldown period: 5 minutes between withdrawals with the same amount
+
+        **Success**: Returns 201 with withdrawal details, status is "pending"
+        **Errors**: Returns Problem Details format (RFC 7807)
+      operationId: createWithdrawal
+      tags:
+        - Withdrawals
+      security:
+        - userIdHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+            examples:
+              validRequest:
+                summary: Valid withdrawal request
+                value:
+                  userId: "user-001"
+                  amount: 1234.56
+                  bankAccountId: "bank-account-001"
+                  currency: "USD"
+      responses:
+        '201':
+          description: Withdrawal created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalResponse'
+              examples:
+                successfulWithdrawal:
+                  summary: Successful withdrawal creation
+                  value:
+                    id: "withdrawal-001"
+                    userId: "user-001"
+                    amount: 1234.56
+                    bankAccountId: "bank-account-001"
+                    currency: "USD"
+                    status: "pending"
+                    createdAt: "2026-01-11T20:00:00.000Z"
+        '400':
+          description: Bad request - validation error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                insufficientBalance:
+                  summary: Insufficient balance
+                  value:
+                    type: "https://api.example.com/errors/insufficient-balance"
+                    title: "Insufficient Balance"
+                    status: 400
+                    detail: "The withdrawal amount exceeds your current balance"
+                    instance: "/withdrawals"
+                invalidAmount:
+                  summary: Invalid amount
+                  value:
+                    type: "https://api.example.com/errors/invalid-amount"
+                    title: "Invalid Amount"
+                    status: 400
+                    detail: "Withdrawal amount must be a positive number"
+                    instance: "/withdrawals"
+        '401':
+          description: Unauthorized - missing or invalid x-user-id header
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                unauthorized:
+                  summary: Missing authentication
+                  value:
+                    type: "https://api.example.com/errors/unauthorized"
+                    title: "Unauthorized"
+                    status: 401
+                    detail: "Authentication required to submit withdrawal"
+                    instance: "/withdrawals"
+        '404':
+          description: Not found - bank account does not exist or is not accessible
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                bankAccountNotFound:
+                  summary: Bank account not found
+                  value:
+                    type: "https://api.example.com/errors/bank-account-not-found"
+                    title: "Bank Account Not Found"
+                    status: 404
+                    detail: "The specified bank account does not exist or is not accessible"
+                    instance: "/withdrawals"
+                    bankAccountId: "bank-account-001"
+        '429':
+          description: Too many requests - cooldown period active
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                cooldownActive:
+                  summary: Cooldown period active
+                  value:
+                    type: "https://api.example.com/errors/cooldown-active"
+                    title: "Cooldown Active"
+                    status: 429
+                    detail: "You must wait a few minutes before making another withdrawal with the same amount"
+                    instance: "/withdrawals"
+        '500':
+          description: Internal server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                serverError:
+                  summary: Server error
+                  value:
+                    type: "https://api.example.com/errors/server-error"
+                    title: "Internal Server Error"
+                    status: 500
+                    detail: "An unexpected error occurred while processing your withdrawal"
+                    instance: "/withdrawals"
+
+components:
+  securitySchemes:
+    userIdHeader:
+      type: apiKey
+      in: header
+      name: x-user-id
+      description: User ID for authentication (placeholder - will be replaced with proper auth)
+
+  schemas:
+    WithdrawalRequest:
+      type: object
+      required:
+        - userId
+        - amount
+        - bankAccountId
+        - currency
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: UUID of the authenticated user
+          example: "user-001"
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          description: Withdrawal amount (must match current balance)
+          example: 1234.56
+        bankAccountId:
+          type: string
+          format: uuid
+          description: UUID of the selected bank account
+          example: "bank-account-001"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          description: ISO 4217 currency code (e.g., USD, MXN)
+          example: "USD"
+
+    WithdrawalResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - amount
+        - bankAccountId
+        - currency
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the created withdrawal
+          example: "withdrawal-001"
+        userId:
+          type: string
+          format: uuid
+          description: UUID of the user (echoed from request)
+          example: "user-001"
+        amount:
+          type: number
+          format: double
+          description: Withdrawal amount (echoed from request)
+          example: 1234.56
+        bankAccountId:
+          type: string
+          format: uuid
+          description: UUID of the bank account (echoed from request)
+          example: "bank-account-001"
+        currency:
+          type: string
+          description: ISO 4217 currency code (echoed from request)
+          example: "USD"
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+          description: Current status of the withdrawal
+          example: "pending"
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the withdrawal was created
+          example: "2026-01-11T20:00:00.000Z"
+
+    ProblemDetails:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: |
+            A URI reference that identifies the problem type. This is the primary
+            error classifier for programmatic handling.
+          example: "https://api.example.com/errors/bank-account-not-found"
+        title:
+          type: string
+          description: A short, human-readable summary of the problem type
+          example: "Bank Account Not Found"
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: |
+            A human-readable explanation specific to this occurrence of the problem.
+            This field is displayed to the user in the UI.
+          example: "The specified bank account does not exist or is not accessible"
+        instance:
+          type: string
+          format: uri-reference
+          description: A URI reference that identifies the specific occurrence of the problem
+          example: "/withdrawals"
+        bankAccountId:
+          type: string
+          format: uuid
+          description: |
+            Optional extension field. Included when the error is related to a specific
+            bank account (e.g., 404 bank account not found).
+          example: "bank-account-001"
+
+tags:
+  - name: Withdrawals
+    description: Withdrawal submission and management endpoints

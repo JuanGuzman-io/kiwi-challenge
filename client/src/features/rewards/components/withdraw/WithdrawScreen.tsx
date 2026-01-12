@@ -5,17 +5,20 @@
  * Per FR-031-034: Manage focus and accessibility
  */
 
-import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useRewardsSummary } from "../../hooks/useRewardsSummary";
-import { useBankAccounts } from "../../hooks/useBankAccounts";
-import { AccountSelector } from "./AccountSelector";
-import { LoadingState } from "../../../../components/LoadingState";
-import { ErrorState } from "../../../../components/ErrorState";
-import { formatCurrency } from "../../utils/formatCurrency";
-import { ERROR_MESSAGES } from "../../constants/errorMessages";
-import type { WithdrawLocationState } from "../../types/withdraw.types";
-import "../../styles/withdraw.css";
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useRewardsSummary } from '../../hooks/useRewardsSummary';
+import { useBankAccounts } from '../../hooks/useBankAccounts';
+import { useWithdrawalSubmit } from '../../hooks/useWithdrawalSubmit';
+import { AccountSelector } from './AccountSelector';
+import { WithdrawFooter } from './WithdrawFooter';
+import { LoadingState } from '../../../../components/LoadingState';
+import { ErrorState } from '../../../../components/ErrorState';
+import { formatCurrency } from '../../utils/formatCurrency';
+import { ERROR_MESSAGES } from '../../constants/errorMessages';
+import type { WithdrawLocationState } from '../../types/withdraw.types';
+import type { WithdrawalRequest } from '../../types/withdrawal.types';
+import '../../styles/withdraw.css';
 
 /**
  * Main withdraw screen at /withdraw route
@@ -26,6 +29,12 @@ export function WithdrawScreen() {
   const navigate = useNavigate();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isEntering, setIsEntering] = useState(true);
+  const {
+    submitWithdrawal,
+    isSubmitting,
+    error: submitError,
+    clearError,
+  } = useWithdrawalSubmit();
 
   // Get rewards balance
   const {
@@ -60,20 +69,93 @@ export function WithdrawScreen() {
   }, []);
 
   // Per FR-017, FR-019: Prevent duplicate submissions
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async () => {
+    if (isSubmitting || !selectedAccount || !summary) return;
 
-  const handleSubmit = () => {
-    // Per FR-019: Guard against duplicate submissions
-    if (isSubmitting || !selectedAccount) return;
+    const request: WithdrawalRequest = {
+      amount: summary.balance,
+      bankAccountId: selectedAccount.id,
+      currency: summary.currency,
+    };
 
-    setIsSubmitting(true);
-    // TODO: Implement withdrawal submission in US3
-    console.log("Withdrawing to account:", selectedAccount);
+    clearError();
+
+    try {
+      const response = await submitWithdrawal(request);
+
+      console.info('[WITHDRAWAL_SUCCESS]', {
+        timestamp: new Date().toISOString(),
+        withdrawalId: response.id,
+        amount: response.amount,
+        currency: response.currency,
+        bankAccountId: response.bankAccountId,
+      });
+
+      navigate('/withdraw/success', {
+        state: {
+          withdrawalData: {
+            ...response,
+            lastFourDigits: selectedAccount.lastFourDigits,
+          },
+        },
+      });
+    } catch (error) {
+      const statusCode =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? Number((error as { status: number }).status)
+          : undefined;
+      const detail =
+        typeof error === 'object' && error !== null && 'detail' in error
+          ? (error as { detail: unknown }).detail
+          : undefined;
+      const errorType =
+        typeof error === 'object' && error !== null && 'type' in error
+          ? (error as { type: string }).type
+          : (error as Error)?.name;
+
+      console.warn('[WITHDRAWAL_FAILURE]', {
+        timestamp: new Date().toISOString(),
+        errorType,
+        statusCode,
+        detail,
+      });
+    }
+  };
+
+  const getSubmitErrorMessage = () => {
+    if (!submitError) return null;
+
+    if (submitError instanceof Error && submitError.name === 'TimeoutError') {
+      return ERROR_MESSAGES.TIMEOUT;
+    }
+
+    if (submitError instanceof Error && !('status' in submitError)) {
+      return ERROR_MESSAGES.NETWORK_ERROR;
+    }
+
+    if ('status' in submitError) {
+      if (submitError.status === 404) {
+        return ERROR_MESSAGES.BANK_ACCOUNT_NOT_FOUND;
+      }
+
+      if (Array.isArray(submitError.detail)) {
+        return submitError.detail.join(', ');
+      }
+
+      if (typeof submitError.detail === 'string' && submitError.detail.length > 0) {
+        return submitError.detail;
+      }
+    }
+
+    return ERROR_MESSAGES.WITHDRAWAL_FAILED;
   };
 
   if (isEntering) {
     return (
-      <div className="withdraw-screen withdraw-screen--skeleton" aria-live="polite">
+      <div
+        className="withdraw-screen withdraw-screen--skeleton"
+        aria-live="polite"
+      >
         <div className="skeleton skeleton-back"></div>
         <div className="skeleton skeleton-title"></div>
         <div className="skeleton skeleton-amount-label"></div>
@@ -113,6 +195,7 @@ export function WithdrawScreen() {
 
   // Per FR-015-016: Button enabled only when account is selected
   const isButtonDisabled = !selectedAccount || isSubmitting;
+  const submitErrorMessage = getSubmitErrorMessage();
 
   return (
     <div className="withdraw-screen">
@@ -120,7 +203,7 @@ export function WithdrawScreen() {
         type="button"
         className="back-button"
         aria-label="Volver a Rewards"
-        onClick={() => navigate("/rewards")}
+        onClick={() => navigate('/rewards')}
       >
         <svg
           width="24"
@@ -130,16 +213,16 @@ export function WithdrawScreen() {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill-rule="evenodd"
-            clip-rule="evenodd"
+            fillRule="evenodd"
+            clipRule="evenodd"
             d="M8.29289 12.7071C7.90237 12.3166 7.90237 11.6834 8.29289 11.2929L13.9498 5.63604C14.3403 5.24551 14.9735 5.24551 15.364 5.63604C15.7545 6.02656 15.7545 6.65973 15.364 7.05025L10.4142 12L15.364 16.9497C15.7545 17.3403 15.7545 17.9734 15.364 18.364C14.9735 18.7545 14.3403 18.7545 13.9498 18.364L8.29289 12.7071Z"
             fill="#334155"
           />
         </svg>
       </button>
       {/* Per FR-001: Title */}
-      <h1 style={{ height: "32px", fontWeight: "bold" }}>
-        {selectedAccount ? "Retirar tus fondos" : "Elige tu método de retiro"}
+      <h1 style={{ height: '32px', fontWeight: 'bold' }}>
+        {selectedAccount ? 'Retirar tus fondos' : 'Elige tu método de retiro'}
       </h1>
 
       {/* Per FR-002-004: Display withdrawal amount */}
@@ -158,26 +241,24 @@ export function WithdrawScreen() {
         onRetry={refetchAccounts}
       />
 
-      <div className="withdraw-footer">
-        <div className="withdraw-warning-card" role="note">
-          <img
-            src="/src/assets/brake-warning-llustration.png"
-            alt="Advertencia"
-            className="withdraw-warning-icon"
-            width={32}
-            height={32}
-          />
-          <p className="withdraw-warning-text">
-            <strong>Debes esperar unos minutos </strong>
-            antes de realizar otro retiro con el mismo monto.
-          </p>
-        </div>
-
+      <WithdrawFooter>
+        {submitErrorMessage && (
+          <div className="withdraw-submit-error" role="alert">
+            <p className="withdraw-submit-error-text">{submitErrorMessage}</p>
+            <button
+              type="button"
+              className="withdraw-submit-retry"
+              onClick={() => clearError()}
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
         {/* Per FR-014-020: Primary action button */}
         <button
           ref={buttonRef}
           className={`primary-action-button ${
-            isButtonDisabled ? "disabled" : "enabled"
+            isButtonDisabled ? 'disabled' : 'enabled'
           }`}
           onClick={handleSubmit}
           disabled={isButtonDisabled}
@@ -185,9 +266,9 @@ export function WithdrawScreen() {
           aria-disabled={isButtonDisabled}
           type="button"
         >
-          {isSubmitting ? "Procesando..." : "Retirar fondos"}
+          {isSubmitting ? 'Procesando...' : 'Retirar fondos'}
         </button>
-      </div>
+      </WithdrawFooter>
     </div>
   );
 }

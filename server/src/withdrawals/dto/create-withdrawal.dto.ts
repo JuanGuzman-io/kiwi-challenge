@@ -2,10 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsPositive, IsString, IsUUID, IsOptional } from 'class-validator';
 
 export class CreateWithdrawalDto {
-  @ApiProperty({ example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' })
-  @IsUUID()
-  userId: string;
-
   @ApiProperty({ example: 100.5, description: 'Amount to withdraw' })
   @IsNumber()
   @IsPositive()

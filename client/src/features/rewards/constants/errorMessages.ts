@@ -39,4 +39,14 @@ export const ERROR_MESSAGES = {
    * Per edge case handling in spec
    */
   NO_BANK_ACCOUNTS: 'No tienes cuentas bancarias vinculadas',
+
+  /**
+   * Error message for withdrawal submission failures
+   */
+  WITHDRAWAL_FAILED: 'No pudimos procesar tu retiro. Por favor, intenta de nuevo.',
+
+  /**
+   * Error message when selected bank account is not found
+   */
+  BANK_ACCOUNT_NOT_FOUND: 'No encontramos la cuenta bancaria seleccionada. Por favor, elige otra.',
 } as const;

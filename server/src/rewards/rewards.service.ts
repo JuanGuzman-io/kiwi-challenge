@@ -30,7 +30,8 @@ export class RewardsService {
     const creditSum = credits._sum.amount ? Number(credits._sum.amount.toString()) : 0;
     const debitSum = debits._sum.amount ? Number(debits._sum.amount.toString()) : 0;
 
-    const balance = Number((creditSum - debitSum).toFixed(2));
+    // Withdrawals are stored as negative amounts, so add debits to credits.
+    const balance = Number((creditSum + debitSum).toFixed(2));
 
     this.logger.log(`Calculated balance for user ${userId}: ${balance}`);
 

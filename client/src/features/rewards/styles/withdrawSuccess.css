@@ -1,0 +1,121 @@
+/* Withdraw success screen styles */
+.withdraw-success-screen {
+  width: min(375px, 100%);
+  min-height: 652px;
+  padding: 54px 24px 24px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  background: #ffffff;
+  animation: withdraw-fade 180ms ease-out;
+}
+
+.success-visual {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.success-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.success-fallback {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: #e2f7ee;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 600;
+}
+
+.success-title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  color: var(--ink-strong);
+  text-align: center;
+}
+
+.success-description {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.success-action-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #33caff;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.success-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(51, 202, 255, 0.32);
+}
+
+.withdraw-success-screen--skeleton {
+  gap: 20px;
+}
+
+.withdraw-success-screen--skeleton .skeleton {
+  background: linear-gradient(90deg, #e2e8f0, #f1f5f9, #e2e8f0);
+  background-size: 200% 100%;
+  animation: success-shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.success-skeleton-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+}
+
+.success-skeleton-title {
+  width: 240px;
+  height: 24px;
+}
+
+.success-skeleton-description {
+  width: 280px;
+  height: 48px;
+}
+
+.success-skeleton-button {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+@keyframes success-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
